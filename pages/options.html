@@ -124,13 +124,12 @@ a {
     box-sizing: border-box;
     max-width: 888px;
     min-width: 600px;
-    padding: 0 24px;
+    padding: 0 24px ;
 }
 
 #mainview > div h1 {
     -webkit-padding-end: 24px;
     -webkit-user-select: none;
-    border-bottom: 1px solid #EEE;
     color: #53637D;
     font-size: 200%;
     font-weight: normal;
@@ -142,10 +141,10 @@ a {
 
 section {
     -webkit-box-orient: horizontal;
-    border-bottom: 1px solid #EEE;
+    border-top: 1px solid #EEE;
     display: -webkit-box;
-    margin-top: 17px;
-    padding-bottom: 20px;
+    margin-bottom: 20px;
+    padding-top: 17px;
 }
 
 section > h3 {
@@ -163,28 +162,7 @@ section > div:only-of-type {
 section > div:only-of-type label {
     margin-right: 5px;
 }
-
-#hotKeySection > div div:last-of-type {
-    margin-top: 10px;
-}
-
-#dictSection label:last-of-type {
-    margin-left: 10px;
-}
-
-
-#logSection h4 {
-    margin-bottom: 0;
-}
-
-#logSection ul ul {
-    list-style-type: square;
-    margin-left: 24px;
-}
-    
     </style>
-    <script type="text/javascript" src="../src/dom-1.2.js"></script>
-    <script type="text/javascript" src="../src/options.js"></script>
 </head>
 
 <body>
@@ -198,64 +176,11 @@ section > div:only-of-type label {
     <div id="mainview">
         <div id="browserPage">
             <h1>基本设置</h1>
-            <section id="skinSection">
-                <h3>界面样式：</h3>
+            <section id="remindSection">
+                <h3>消息提示：</h3>
                 <div>
-                    <label><input type="radio" name="skin" value="orange">橙色</label>
-                    <label><input type="radio" name="skin" value="blue">蓝色</label>
-                    <label><input type="radio" name="skin" value="green">绿色</label>
-                    <label><input type="radio" name="skin" value="red">红色</label>
-                    <label><input type="radio" name="skin" value="black">黑色</label>
-                </div>
-            </section>
-            <section id="hoverSection">
-                <h3>取词：</h3>
-                <div>
-                    <div>
-                        <h4>词典功能选择：</h4>
-                        <label>主词典</label>
-                        <select name="mainDict">
-                            <option value="powerword">金山词霸</option>
-                            <option value="dictcn">海词</option>
-                            <option value="qqdict">QQ词典</option>
-                        </select>
-                        <label>辅助词典</label>
-                        <select name="assistDict">
-                            <option value="">无</option>
-                            <option value="powerword">金山词霸</option>
-                            <option value="dictcn">海词</option>
-                            <option value="qqdict">QQ词典</option>
-                        </select>
-                        <p class="commit">当主词典查询不到结果时, 辅助词典用于二次查询</p>
-                    </div>
-                    <div>
-                        <h4>取词相应速度：</h4>
-                        <input type="range" name="speed" value="">
-                    </div>
-                </div>
-            </section>
-            <section id="assistKeySection">
-                <h3>辅助键：</h3>
-                <div>
-                    <select name="assistKey">
-                        <option value="none">无</option>
-                        <option value="ctrl">Ctrl键</option>
-                        <option value="alt">Alt键</option>
-                        <option value="ctrlalt">Ctrl键+Alt键</option>
-                    </select>
-                </div>
-            </section>
-            <section id="hotKeySection">
-                <h3>快捷键：</h3>
-                <div>
-                    <div>
-                        <label>取词:<input type="text" name="hotKeyHover" value=""></label>
-                        <label>划译:<input type="text" name="hotKeyDrag" value=""></label>
-                        <span class="commit">直接按键盘设置</span>
-                    </div>
-                    <div>
-                        <label><input type="checkbox" name="hotKeySwitch" value="0">禁用快捷键</label>
-                    </div>
+                    <label><input type="checkbox" name="soundRemind" value="orange">声音</label>
+                    <label><input type="checkbox" name="popupRemind" value="blue">弹出窗口</label>
                 </div>
             </section>
         </div>
@@ -264,13 +189,12 @@ section > div:only-of-type label {
             <section id="illustrateSection">
                 <h3>说明：</h3>
                 <div>
-                    <p>感谢您安装最新版的易词！</p>
-                    <p>在基本设置选项卡中个性化词典</p>
-                    <p>任何问题或者建议可以联系我：<a href="mailto:fliuming@gmail.com">邮箱</a></p>
-                    <p>感谢宁世杰童鞋设计的程序图标</p>
+                    <p>感谢您安装最新版的豆聊！</p>
+                    <p>任何问题或者建议可以联系作者：<a href="mailto:fliuming@gmail.com">邮箱</a></p>
                 </div>
             </section>
         </div>
     </div>
+    <script type="text/javascript" src="../src/options.js"></script>
 </body>
 </html>

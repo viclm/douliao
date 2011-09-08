@@ -1,4 +1,5 @@
 'use strict';
+localStorage.config || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true}));
 
 function Resource(args) {
     this.method = args.method || 'get';
@@ -142,150 +143,150 @@ Mail.prototype.proxy = function (fn, obj) {
 
 Mail.prototype.portHandler = function(port) {
 	var self = this;
-        if (port.name === 'dchat') {
-            port.onMessage.addListener(function(msg) {
-                switch (msg.cmd) {
-                case 'send':
-                    self.send(
-                        msg,
-                        function (data, e) {
-                            port.postMessage({cmd: 'sended', result: true});
-                        },
-                        function (e) {
-                            if (e.status === 403) {
-                                port.postMessage({
-                                    cmd: 'sended',
-                                    result: false,
-                                    msg:{
-                                        content: msg.content,
-                                        people: msg.people,
-                                        captcha: {
-                                            token: /=(.+?)&amp;/.exec(e.responseText)[1],
-                                            string: /captcha_url=(.+)$/.exec(e.responseText)[1]
-                                        }
+    if (port.name === 'dchat') {
+        port.onMessage.addListener(function(msg) {
+            switch (msg.cmd) {
+            case 'send':
+                self.send(
+                    msg,
+                    function (data, e) {
+                        port.postMessage({cmd: 'sended', result: true});
+                    },
+                    function (e) {
+                        if (e.status === 403) {
+                            port.postMessage({
+                                cmd: 'sended',
+                                result: false,
+                                msg:{
+                                    content: msg.content,
+                                    people: msg.people,
+                                    captcha: {
+                                        token: /=(.+?)&amp;/.exec(e.responseText)[1],
+                                        string: /captcha_url=(.+)$/.exec(e.responseText)[1]
                                     }
-                                });
-                            }
-                        });
-                    break;
-                case 'receivestart':
-                    if (self.peopleInfo[msg.people] === undefined) {
-                        self.peopleNum += 1;
-						self.peopleInfo[msg.people] = port;
-
-						port.onDisconnect.addListener(function (port) {
-							if (port.name === 'dchat') {
-								delete self.peopleInfo[port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1]];
-								self.peopleNum -= 1;
-								if (self.peopleNum === 0) {
-									clearInterval(self.timer);
-									self.timer = null;
-								}
-							}
-						});
-                    }
-					else {
-						chrome.tabs.update(self.peopleInfo[msg.people].tab.id, {selected: true});
-						port.postMessage({cmd: 'close'});
-					}
-
-                    if (self.peopleNum > 0 && self.timer === null) {
-						self.receive();
-						self.timer = setInterval(self.proxy(self.receive, self), 10000);
-                    }
-                    port.postMessage({cmd: 'setStatus', status: msg.people in JSON.parse(localStorage.getItem('friends'))});
-                    break;
-                case 'addFriend':
-                    var friends = JSON.parse(localStorage.getItem('friends'));
-                    if (friends[msg.people] === undefined) {
-                        friends[msg.people] = msg;
-                        delete msg.cmd;
-                        delete msg.people;
-                        localStorage.setItem('friends', JSON.stringify(friends));
-                    }
-                    break;
-                case 'pop':
-                    self.popInfo = msg;
-                    chrome.windows.create({
-                        url: '../pages/pop.html#' + msg.people + '/',
-                        width: 400,
-                        height: 430,
-                        type: 'popup'
+                                }
+                            });
+                        }
                     });
-					msg.me = self.me;
-					delete msg.cmd;
-                    break;
-                }
-            });
-        }
-    };
+                break;
+            case 'receivestart':
+                if (self.peopleInfo[msg.people] === undefined) {
+                    self.peopleNum += 1;
+                    self.peopleInfo[msg.people] = port;
 
-Mail.prototype.requestHandler = function (request, sender, sendResponse) {
-	var self = this;
-        switch (request.cmd) {
-        case 'getUnread':
-            sendResponse({unread: self.unread});
-            break;
-        case 'showUnread':
-            if (self.peopleInfo[request.people]) {
-                chrome.tabs.update(self.peopleInfo[request.people].tab.id, {selected: true});
-                self.setUnread(request.people);
-            }
-            else {
+                    port.onDisconnect.addListener(function (port) {
+                        if (port.name === 'dchat') {
+                            delete self.peopleInfo[port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1]];
+                            self.peopleNum -= 1;
+                            if (self.peopleNum === 0) {
+                                clearInterval(self.timer);
+                                self.timer = null;
+                            }
+                        }
+                    });
+                }
+                else {
+                    chrome.tabs.update(self.peopleInfo[msg.people].tab.id, {selected: true});
+                    port.postMessage({cmd: 'close'});
+                }
+
+                if (self.peopleNum > 0 && self.timer === null) {
+                    self.receive();
+                    self.timer = setInterval(self.proxy(self.receive, self), 10000);
+                }
+                port.postMessage({cmd: 'setStatus', status: msg.people in JSON.parse(localStorage.getItem('friends'))});
+                break;
+            case 'addFriend':
+                var friends = JSON.parse(localStorage.getItem('friends'));
+                if (friends[msg.people] === undefined) {
+                    friends[msg.people] = msg;
+                    delete msg.cmd;
+                    delete msg.people;
+                    localStorage.setItem('friends', JSON.stringify(friends));
+                }
+                break;
+            case 'pop':
+                self.popInfo = msg;
                 chrome.windows.create({
-                    url: '../pages/pop.html#' + request.people + '/',
+                    url: '../pages/pop.html#' + msg.people + '/',
                     width: 400,
                     height: 430,
                     type: 'popup'
                 });
+                msg.me = self.me;
+                delete msg.cmd;
+                break;
+            }
+        });
+    }
+};
 
-                if (request.sign) {
-                    request.me = self.me;
-                    self.popInfo = request;
-                    new Resource({
-                        url: 'http://api.douban.com/people/' + request.people,
-                        method: 'get',
-                        data: 'alt=json',
-                        load: function (data) {
-                            data = JSON.parse(data);
-                            var friends = JSON.parse(localStorage.getItem('friends'));
-                            friends[request.people] = {
-                                name: data.title['$t'],
-                                icon: data['link'][2]['@href'],
-                                sign: data['db:signature']['$t']
-                            };
-                            localStorage.setItem('friends', JSON.stringify(friends));
-                        }
-                    }).request();
-                }
-            }
-            break;
-        case 'getPop':
-			var i = 0, res, history = [];
-			res = self.setUnread(request.people);
-			for (; i < res.length ; i += 1) {
-				history.push({people: 'ta', content: res[i].content});
-			}
-            if (self.popInfo) {
-				self.popInfo.history = self.popInfo.history.concat(history);
-                sendResponse(self.popInfo);
-                self.popInfo = undefined;
-            }
-            else {
-                sendResponse({people: request.people, name: res[0].name, icon: res[0].icon, sign: res[0].sign, history: history, me: self.me});
-            }
-            break;
-        case 'getList':
-            self.receive();
-            sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends'))});
-            break;
-		case 'deleteFriend':
-			var friends = JSON.parse(localStorage.getItem('friends'));
-			delete friends[request.people];
-			localStorage.setItem('friends', JSON.stringify(friends));
-			break;
+Mail.prototype.requestHandler = function (request, sender, sendResponse) {
+	var self = this;
+    switch (request.cmd) {
+    case 'getUnread':
+        sendResponse({unread: self.unread});
+        break;
+    case 'showUnread':
+        if (self.peopleInfo[request.people]) {
+            chrome.tabs.update(self.peopleInfo[request.people].tab.id, {selected: true});
+            self.setUnread(request.people);
         }
-    };
+        else {
+            chrome.windows.create({
+                url: '../pages/pop.html#' + request.people + '/',
+                width: 400,
+                height: 430,
+                type: 'popup'
+            });
+
+            if (request.sign) {
+                request.me = self.me;
+                self.popInfo = request;
+                new Resource({
+                    url: 'http://api.douban.com/people/' + request.people,
+                    method: 'get',
+                    data: 'alt=json',
+                    load: function (data) {
+                        data = JSON.parse(data);
+                        var friends = JSON.parse(localStorage.getItem('friends'));
+                        friends[request.people] = {
+                            name: data.title['$t'],
+                            icon: data['link'][2]['@href'],
+                            sign: data['db:signature']['$t']
+                        };
+                        localStorage.setItem('friends', JSON.stringify(friends));
+                    }
+                }).request();
+            }
+        }
+        break;
+    case 'getPop':
+        var i = 0, res, history = [];
+        res = self.setUnread(request.people);
+        for (; i < res.length ; i += 1) {
+            history.push({people: 'ta', content: res[i].content});
+        }
+        if (self.popInfo) {
+            self.popInfo.history = self.popInfo.history.concat(history);
+            sendResponse(self.popInfo);
+            self.popInfo = undefined;
+        }
+        else {
+            sendResponse({people: request.people, name: res[0].name, icon: res[0].icon, sign: res[0].sign, history: history, me: self.me});
+        }
+        break;
+    case 'getList':
+        self.receive();
+        sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends'))});
+        break;
+    case 'deleteFriend':
+        var friends = JSON.parse(localStorage.getItem('friends'));
+        delete friends[request.people];
+        localStorage.setItem('friends', JSON.stringify(friends));
+        break;
+    }
+};
 
 Mail.prototype.send = function (msg, load, error) {
     var entry = '<?xml version="1.0" encoding="UTF-8"?>'
@@ -305,7 +306,7 @@ Mail.prototype.send = function (msg, load, error) {
         load: load,
         error: error
     }).request();
-}
+};
 
 Mail.prototype.receive = function () {
     var self = this;
@@ -345,7 +346,7 @@ Mail.prototype.receive = function () {
                         if (self.peopleInfo[response.people]) {
                             self.peopleInfo[response.people].postMessage(response);
                         }
-                        self.sound.play();
+                        JSON.parse(localStorage.config).soundRemind && self.sound.play();
                         chrome.windows.getLastFocused(function (win) {
                             if (win.focused) {
                                 chrome.tabs.getSelected(win.id, function (tab) {
@@ -402,11 +403,13 @@ Mail.prototype.setUnread = function (people, info) {
         info.people = people;
         this.unread[this.unread.length] = info;
 		res.push(info);
-		var notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
-		notification.show();
-		setTimeout(function () {
-			notification.cancel();
-		}, 3000);
+        if (JSON.parse(localStorage.config).popupRemind) {
+            var notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
+            notification.show();
+            setTimeout(function () {
+                notification.cancel();
+            }, 3000);
+        }
     }
     var num = this.unread.length;
     chrome.browserAction.setBadgeText({text: num > 0 ? num.toString() : ''});

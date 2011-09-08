@@ -13,6 +13,8 @@
 
         this.isLock = false;
         this.msgRequreToken = null;
+
+        this.ad = '试用豆聊: http://is.gd/SEkK6M';
     }
 
     DChat.prototype.proxy = function (fn, obj) {
@@ -96,6 +98,10 @@
             }
             else {
                 this.addContent(this.me ? '<img src="' + this.me.icon + '"><p>' + value + '</p>' : '<strong>我说</strong>: ' + value, 'right');
+                if (this.ad) {
+                    value += '\n' + this.ad;
+                    this.ad = undefined;
+                }
                 this.port.postMessage({cmd: 'send', content: value, people: self.people});
             }
 
