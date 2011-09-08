@@ -1,0 +1,64 @@
+#dchat {border: 1px solid #A6D098; width: 225px; position: fixed; right: 0; bottom: 0; font-size: 12px; background-color: #fff;}
+#dchat * {
+    position: static;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: auto;
+
+    float: none;
+    clear: none;
+    display: '';
+
+    margin: 0;
+    padding: 0;
+    border-width: medium;
+    border-color: inherit;
+    border-style: none;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    max-height: none;
+
+    color: inherit;
+    background-attachment: scroll;
+    background-color: transparent;
+    background-image: none;
+    background-position: 0% 0%;
+    background-repeat: repeat;
+
+    font-size: 12px;
+    line-height: normal;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: normal;
+    text-align: left;
+    text-decoration: none;
+    text-indent: 0;
+    text-transform: none;
+    white-space: normal;
+    letter-spacing: normal;
+    word-spacing: normal;
+    vertical-align: baseline;
+    overflow: visible;
+    visibility: visible;
+}
+
+#dchat header {background-color: #E9F4E9; color: #0C7823; border-bottom: 1px solid #A6D098; padding: 7px 6px;}
+#dchat h1 {font-size: 1em;}
+#dchat header div{position: absolute; right: 6px; top: 7px;}
+#dchat header img{width: 10px; height: 10px; margin-left: 10px; cursor: pointer;}
+#dchat header h1 img{width: 10px; height: 10px; margin-right: 5px; margin-left: 0;}
+
+#dchat section {padding: 2%; height: 260px;}
+#dchat section>div:first-of-type {height: 78%; overflow: auto;}
+#dchat section>div:first-of-type div{margin-bottom: 2px;}
+#dchat section strong {font-weight: bold;}
+#dchat section div p {color: #777;}
+#dchat section div.captcha img{width: 213px; height: 34px;}
+
+#dchat section>div:last-of-type {height: 20%; margin-top: 2%; padding: 1px; background-color: #A6D098;}
+#dchat section textarea{width: 100%; height: 100%; min-height: 45px; border:none; background-color: #fff;}

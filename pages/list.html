@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <title>豆聊</title>
+        <style type="text/css">
+            body {margin: 0; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif; min-width: 200px;}
+            img {width: 32px; height: 32px; border-radius: 5px;}
+            h1, h2 {font-size: 12px; margin: 0; margin: 0; line-height: 18px;}
+            p {margin: 0; color: grey;}
+            input {width: 100%;}
+
+            header {background: -webkit-linear-gradient(top, #D1EED1,#62c462); padding: 5px}
+            div.entry {position: relative; overflow: hidden; white-space: nowrap;}
+            div.entry div {float: left; max-width: 142px; overflow: hidden;}
+            div.entry img {float: right;}
+            header .entry {margin-bottom: 5px;}
+
+            section {min-height: 450px;}
+			section .entry {padding: 5px; border-bottom: 1px solid #BFE7BF;}
+
+			.contextmenu {padding: 5px 10px; position: absolute; z-index: 2; cursor: pointer; border: 1px solid #bfbfbf; background-color: white; box-shadow: 1px 1px 3px #bfbfbf;}
+        </style>
+    </head>
+    <body>
+        <div>
+            <header>
+                <div class="entry">
+                    <div><h1></h1><p></p></div>
+                    <img src="" />
+                </div>
+                <input type="search" style="display:none" placeholder="搜索好友" />
+            </header>
+            <section>
+            </section>
+        </div>
+    </body>
+    <script type="text/javascript" charset="utf-8" src="../src/list.js"></script>
+</html>
