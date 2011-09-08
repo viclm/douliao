@@ -1,0 +1,21 @@
+{
+    "name": "豆聊",
+    "version": "1.4.5",
+    "description": "用QQ的方式聊豆邮",
+    "icons": {
+        "16": "assets/icon16.png",
+        "48": "assets/icon48.png",
+        "128": "assets/icon128.png"
+    },
+    "background_page": "pages/background.html",
+    "browser_action": {
+        "default_icon": "assets/icon16.png",
+        "default_title": "豆聊",
+        "default_popup": "pages/list.html"
+    },
+    "permissions": [
+        "tabs",
+        "notifications",
+        "http://*.douban.com/"
+    ]
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+        <link rel="stylesheet" href="style/ui.css" />
+        <style type="text/css">
+            body {margin: 0; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif}
+			#dchat {width: 100%; border: none; position: static;}
+
+			#dchat header {display: -webkit-box; -webkit-box-orient: horizontal;}
+			#dchat header img:first-of-type {margin-right: 5px; margin-left: 0;}
+			#dchat header p{max-width: 90%;overflow: hidden;white-space: nowrap;}
+
+			#dchat section div {position: relative; overflow: hidden;}
+			#dchat section div.left * {float: left}
+			#dchat section div.right * {float: right}
+			#dchat section div.left p, #dchat section div.right img {margin-left: 10px;}
+			#dchat section div img {width: 32px; height: 32px; border-radius: 5px;}
+			#dchat section div p {background: -webkit-linear-gradient(top, #62c462, #57a957);
+				border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25); border-width: 1px; border-style: solid; border-radius: 4px;
+				-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);color: #fff; line-height: 18px; max-width: 65%; padding: 0 5px;}
+			#dchat section div.right p {background: -webkit-linear-gradient(top, #fceec1, #eedc94); color: #404040;}
+
+			#dchat section div:last-of-type {padding: 5px; background-color: white;}
+			#dchat section textarea {-webkit-transition: border linear 0.2s, box-shadow linear 0.2s; outline:none;
+				-webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #CCC; -webkit-box-sizing:border-box; border-radius: 3px; padding: 5px;}
+			#dchat section textarea:focus {border-color: rgba(82, 168, 236, 0.8); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset, 0 0 8px rgba(82, 168, 236, 0.6);}
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript" charset="utf-8" src="../src/dchat.js"></script>
+		<script type="text/javascript" src="../src/pop.js"></script>
+    </body>
+</html>

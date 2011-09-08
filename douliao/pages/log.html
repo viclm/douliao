@@ -1,0 +1,12 @@
+发生错误啦啦啦:
+<script type="text/javascript">
+    chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
+	for (var key in request) {
+	    var item = document.createElement('p');
+	    p.innerHTML = '<strong>' + key + '</strong>: ' + request[key];
+	    document.body.appendChild(p);
+	}
+    });
+</script>
+发送给作者<a href="mailto:fliuming@gmail.com?subject=豆聊错误">
+
