@@ -99,7 +99,12 @@ var oauth = (function () {
 
     function main(callback) {
 	callback = callback || function () {};
-        if (!localStorage.getItem('access_token')) {
+        if (localStorage.getItem('access_token') && localStorage.getItem('access_token_secret')
+			&& localStorage.getItem('consumer_key') && localStorage.getItem('consumer_key_secret')
+			&& localStorage.getItem('signature_method')) {
+            callback();
+        }
+        else {
             //chrome.browserAction.setBadgeText({text: 'auth'});
             getRequestToken(function () {
                 chrome.tabs.create({
@@ -123,9 +128,6 @@ var oauth = (function () {
                     });
                 }
             });
-        }
-        else {
-            callback();
         }
     }
 
