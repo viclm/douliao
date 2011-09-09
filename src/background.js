@@ -90,6 +90,7 @@ function Mail(args) {
 	this.timer = null;
     this.sound = document.getElementById('alert');
     this.unread = [];
+	this.history = {};
 
 	this.popInfo = undefined;
 
@@ -172,11 +173,38 @@ Mail.prototype.portHandler = function(port) {
             case 'receivestart':
                 if (self.peopleInfo[msg.people] === undefined) {
                     self.peopleNum += 1;
-                    self.peopleInfo[msg.people] = port;
+                    self.peopleInfo[msg.people] = {port: port, history: []};
 
                     port.onDisconnect.addListener(function (port) {
                         if (port.name === 'dchat') {
-                            delete self.peopleInfo[port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1]];
+							var people = port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1], history = peopleInfo[people].history, content = '', i , len, item;
+							for (i = 0, len = history.length ; i < len ; i += 1) {
+								item = history[i];
+								content += item.name + '说:\n' + item.content + '\n';
+							}
+							self.send(
+								{people: self.me.id, content: content},
+								function () {},
+								function (e) {
+									if (e.status === 403) {
+										self.history[people] = {
+											people: self.me.id,
+											content: content,
+											captcha: {
+												token: /=(.+?)&amp;/.exec(e.responseText)[1],
+												string: /captcha_url=(.+)$/.exec(e.responseText)[1]
+											}
+										};
+										chrome.windows.create({
+											url: '../pages/captcha.html?' + people,
+											width: 500,
+											height: 240,
+											type: 'popup'
+										});
+									}
+								}
+							);
+                            delete self.peopleInfo[people];
                             self.peopleNum -= 1;
                             if (self.peopleNum === 0) {
                                 clearInterval(self.timer);
@@ -285,6 +313,33 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         delete friends[request.people];
         localStorage.setItem('friends', JSON.stringify(friends));
         break;
+	case 'getCaptcha':
+		sendResponse({url: self.history[request.people]});
+		break;
+	case 'sendHistory'://here
+		self.send(
+			{people: self.me.id, content: content},
+	function () {},
+	function (e) {
+		if (e.status === 403) {
+			self.history[people] = {
+				people: self.me.id,
+				content: content,
+				captcha: {
+					token: /=(.+?)&amp;/.exec(e.responseText)[1],
+					string: /captcha_url=(.+)$/.exec(e.responseText)[1]
+				}
+			};
+			chrome.windows.create({
+				url: '../pages/captcha.html?' + people,
+				width: 500,
+				height: 240,
+				type: 'popup'
+			});
+		}
+	}
+	);
+		break;
     }
 };
 
@@ -344,7 +399,7 @@ Mail.prototype.receive = function () {
                         }
                         response.content = str2;console.log(str1, '++++', str2)
                         if (self.peopleInfo[response.people]) {
-                            self.peopleInfo[response.people].postMessage(response);
+                            self.peopleInfo[response.people].port.postMessage(response);
                         }
                         JSON.parse(localStorage.config).soundRemind && self.sound.play();
                         chrome.windows.getLastFocused(function (win) {
