@@ -1,6 +1,6 @@
-chrome.extension.sendRequest({cmd: 'getPop', people: location.href.match(/[\/#]([^\/#]+)\/?$/)[1]}, function(response) {
+chrome.extension.sendRequest({cmd: 'getPeopleInfo', people: location.href.match(/#([^#]+)$/)[1]}, function(response) {
     document.title = response.name;
-    var dchat = new DChat({people: response.people, name: response.name, icon: response.icon, sign: response.sign, me: response.me, ui: 'simple'}), msgList, div, i;
+    var dchat = new DChat(response), msgList, div, i;
     dchat.start();
     msgList = dchat.chatWindow.querySelector('section>div');
     for (i = 0 ; i < response.history.length ; i += 1) {

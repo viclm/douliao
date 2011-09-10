@@ -7,6 +7,7 @@ function openPanel(e) {
         response.name = this.querySelector('h2').innerHTML;
         response.sign = this.querySelector('p').innerHTML;
         response.icon = this.querySelector('img').src;
+        response.updateFriend = true;
         response.history = [];
         chrome.extension.sendRequest(response);
         e.preventDefault();
@@ -21,23 +22,6 @@ function openContextmenu(e) {
 	contextmenu.style.display = '';
 	e.stopPropagation();
 }
-
-function drawClose() {
-        var canvas = document.createElement('canvas'), ctx;
-        canvas.width = 100;
-        canvas.height = 100;
-        canvas.style.backgroundColor = 'rgba(0, 0, 0, 1)';
-        ctx = canvas.getContext('2d');
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = '#0C7823';
-        ctx.beginPath();
-        ctx.moveTo(5,5);
-        ctx.lineTo(95, 95);
-        ctx.moveTo(95, 5);
-        ctx.lineTo(5, 95);
-        ctx.stroke();
-        return canvas.toDataURL();
-    };
 
 chrome.extension.sendRequest({cmd: 'getList'}, function(response) {
     var me = response.me, friends = response.friends, key, div;

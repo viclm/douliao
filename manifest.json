@@ -14,6 +14,12 @@
         "default_title": "豆聊",
         "default_popup": "pages/list.html"
     },
+    "content_scripts": [
+        {
+            "matches": ["http://www.douban.com/people/*"],
+            "js": ["src/contentscript.js"]
+        }
+    ],
     "permissions": [
         "tabs",
         "notifications",

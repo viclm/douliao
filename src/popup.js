@@ -1,5 +1,5 @@
 function showMessage(e) {
-    chrome.extension.sendRequest({cmd: 'showUnread', people: e.target.id});
+    chrome.extension.sendRequest({cmd: 'createWindow', people: e.target.id});
 }
 
 function draw(image, num) {
