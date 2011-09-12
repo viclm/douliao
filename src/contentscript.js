@@ -1,14 +1,13 @@
 (function (window, document, undefined) {
     if (location.href.indexOf('http') === 0) {
-        var container = document.querySelector('#profile .user-opt'), button, dchat, img;
+        var container = document.querySelector('#profile .user-opt'), button, dchat;
+
+        if (container === null) {return;}
 
         button = container.querySelector('a.mr5').cloneNode(false);
         button.innerHTML = '豆聊';
         button.style.marginLeft = '5px';
-        img = document.createElement('img');
-        img.src = 'http://t.douban.com/pics/new1.gif';
         container.insertBefore(button, document.getElementById('divac'));
-        container.insertBefore(img, document.getElementById('divac'));
         button.addEventListener('click', function (e) {
             e.preventDefault();
             chrome.extension.sendRequest({

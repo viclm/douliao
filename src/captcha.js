@@ -1,4 +1,4 @@
-var people = /html\?([^\?]+)$/.exec(location.href)[1];
+var people = /html#([^#]+)$/.exec(location.href)[1];
 chrome.extension.sendRequest({cmd: "getCaptcha", people: people}, function(response) {
 	document.querySelector('img').src = response.url;
 });

@@ -154,7 +154,7 @@ Mail.prototype.portHandler = function(port) {
                         port.postMessage({cmd: 'sended', result: true});
                         self.peopleInfo[msg.people].history.push({name: '我', content: msg.content});
                     },
-                    function (e) {
+                    function (e) {console.log(e, e.status)
                         if (e.status === 403) {
                             port.postMessage({
                                 cmd: 'sended',
@@ -197,9 +197,9 @@ Mail.prototype.portHandler = function(port) {
                                                     token: /=(.+?)&amp;/.exec(e.responseText)[1],
                                                     string: /captcha_url=(.+)$/.exec(e.responseText)[1]
                                                 }
-                                            };
+                                            };console.log(self.history)
                                             chrome.windows.create({
-                                                url: '../pages/captcha.html?' + people,
+                                                url: '../pages/captcha.html#' + people,
                                                 width: 500,
                                                 height: 240,
                                                 type: 'popup'
@@ -246,7 +246,7 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
     switch (request.cmd) {
     case 'createWindow':
         if (self.peopleInfo[request.people]) {
-            chrome.tabs.update(self.peopleInfo[info.people].port.tab.id, {selected: true});
+            chrome.tabs.update(self.peopleInfo[request.people].port.tab.id, {selected: true});
             self.setUnread(request.people);
         }
         else {
@@ -258,11 +258,15 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
                 me: self.me
             };
 
-            chrome.windows.create({
-                url: '../pages/pop.html#' + info.people,
-                width: 400,
-                height: 430,
-                type: 'popup'
+            chrome.windows.getLastFocused(function (win) {
+                chrome.windows.create({
+                    url: '../pages/pop.html#' + request.people,
+                    width: 400,
+                    height: 430,
+                    left: win.left + Math.floor((win.width - 400) / 2),
+                    top: win.top + Math.floor((win.height - 430) / 2),
+                    type: 'popup'
+                });
             });
 
             if (request.updateFriend) {
@@ -288,7 +292,7 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         var i = 0, res, history = [], mails = [];
         res = self.setUnread(request.people);
         for (; i < res.length ; i += 1) {
-            history.push({people: res[i].name, content: res[i].content});
+            history.push({name: res[i].name, content: res[i].content});
             mails.push(res[i].mailId);
         }
         self.popInfo.history = history;
@@ -314,9 +318,10 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         localStorage.setItem('friends', JSON.stringify(friends));
         break;
     case 'getCaptcha':
-        sendResponse({url: self.history[request.people]});
+        sendResponse({url: self.history[request.people].captcha.string});
         break;
     case 'sendHistory':
+        self.history[request.people].captcha.string = request.string;console.log(self.history[request.people])
         self.send(self.history[request.people], function () {
             delete self.history[request.people];
         }, function (e) {
@@ -345,7 +350,7 @@ Mail.prototype.send = function (msg, load, error) {
     +'<uri>http://api.douban.com/people/' + msg.people + '</uri>'
         +'</db:entity>'
     +'<content>' + msg.content + '</content>'
-    +'<title>' + (msg.title || '通过豆聊发送的消息') + '</title>'
+    +'<title>' + (msg.title || msg.content.slice(0, 9)) + '</title>'
     +(msg.captcha ? ('<db:attribute name="captcha_token">' + msg.captcha.token + '</db:attribute><db:attribute name="captcha_string">' + msg.captcha.string + '</db:attribute>') : '')
     +'</entry>', self;
 
@@ -385,7 +390,7 @@ Mail.prototype.receive = function () {
         data: 'start-index=1&alt=json',
         load: function (data, e) {
             var i, len, key, people, mails = [];
-            data = JSON.parse(data).entry;
+            data = JSON.parse(data).entry;console.log(data)
             for (i = 0, len = data.length ; i < len ; i += 1) {
                 new Resource({
                     url: data[i].id['$t'],
@@ -414,7 +419,7 @@ Mail.prototype.receive = function () {
                         else {
                             str2 = str1;
                         }
-                        response.content = str2;console.log(str1, '\n\n', str2)
+                        response.content = str2;console.log(str1, '-------------------------------------------', str2)
                         if (self.peopleInfo[response.people]) {
                             self.peopleInfo[response.people].port.postMessage(response);
                             self.peopleInfo[response.people].history.push({name: data.author.name['$t'], content: str2});

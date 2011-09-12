@@ -42,7 +42,7 @@
                 break;
             case 'received':
                 if (self.people === msg.people) {
-                    self.addContent(self.ui === 'simple' ? '<img src="' + self.icon + '"><p>' + msg.content + '</p>' : '<strong>' + self.name + '说</strong>: ' + msg.content, 'left');
+                    self.addContent('<img src="' + self.icon + '"><p>' + msg.content + '</p>', 'left');
                     self.lock(false);
                 }
                 break;
@@ -78,8 +78,8 @@
     };
 
     DChat.prototype.send = function (e) {
-        var value = e.target.value, self = this;
-        if (e.keyCode === 13 && !e.shiftKey && !this.isLock && value.trim() !== '') {
+        var value = e.target.value.trim(), self = this;
+        if (e.keyCode === 13 && !e.shiftKey && !this.isLock && value !== '') {
             if (this.msgRequreToken) {
                 var self = this;
                 this.port.postMessage({
@@ -95,7 +95,7 @@
                 this.msgRequreToken = null;
             }
             else {
-                this.addContent(this.me ? '<img src="' + this.me.icon + '"><p>' + value + '</p>' : '<strong>我说</strong>: ' + value, 'right');
+                this.addContent('<img src="' + this.me.icon + '"><p>' + value + '</p>', 'right');
                 if (this.ad) {
                     value += '\n\n' + this.ad;
                     this.ad = undefined;
@@ -130,15 +130,15 @@
     };
 
     DChat.prototype.createUI = function () {
-        var aside = document.createElement('aside'), metaBtn, html = '';
+        var aside = document.createElement('aside'), metaBtn, html;
         aside.id = 'dchat';
-        html += '<header><img style="display: none" /><p>' + (this.sign ? this.sign : '') + '</p></header><section><div></div><div><textarea></textarea></div></section>';
+        html = '<header><img style="display: none" /><p>' + (this.sign ? this.sign : '') + '</p></header><section><div></div><div><textarea></textarea></div></section>';
         aside.innerHTML = html;
         document.body.appendChild(aside);
         aside.querySelector('header img').addEventListener('click', this.proxy(function (e) {
             if (e.target.className === 'false') {
                 var self = this;
-                this.port.postMessage({cmd: 'addFriend', people: self.people, name: self.name, icon: (self.icon || document.querySelector('#db-usr-profile img').src), sign: self.sign || (document.querySelector('h1 span') ? document.querySelector('h1 span').innerHTML.replace(/^\(|\)$/g, '') : '')});
+                this.port.postMessage({cmd: 'addFriend', people: self.people, name: self.name, icon: self.icon, sign: self.sign});
                 e.target.className = 'true';
                 e.target.src = this.drawStatus(true);
             }
