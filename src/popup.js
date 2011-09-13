@@ -1,5 +1,5 @@
 function showMessage(e) {
-    chrome.extension.sendRequest({cmd: 'showUnread', people: e.target.id});
+    chrome.extension.sendRequest({cmd: 'createWindow', people: e.target.id});
 }
 
 function draw(image, num) {
@@ -12,7 +12,7 @@ function draw(image, num) {
     img.onload = function () {
         ctx.drawImage(img, 0, 0);
         ctx.fillStyle = '#0C7823';
-        ctx.arc(48, 0, 15, 0, 2*Math.PI, false);
+        ctx.arc(48, 0, 15, 0, 2 * Math.PI, false);
         ctx.fill();
         //ctx.fillRect(34, 0, 48, 14);
         ctx.font = "bold 12px serif";
@@ -27,7 +27,7 @@ function draw(image, num) {
 
 
 chrome.extension.sendRequest({cmd: 'getUnread'}, function(response) {
-    var unread = response.unread, unreadClear = {}, i, len, tmp;
+    var unread = response.unread, unreadClear = {}, i, len, key, tmp;
     for (i = 0, len = unread.length ; i < len ; i += 1) {
         tmp = unread[i];
         if (tmp.people in unreadClear) {
@@ -37,11 +37,16 @@ chrome.extension.sendRequest({cmd: 'getUnread'}, function(response) {
             unreadClear[tmp.people] = {icon: tmp.icon, counter: 1};
         }
     }
-    for (i in unreadClear) {
-        tmp = draw(unreadClear[i].icon, unreadClear[i].counter);
-        tmp.id = i;
+    i = 0;
+    for (key in unreadClear) {
+        i += 1;
+        tmp = draw(unreadClear[key].icon, unreadClear[key].counter);
+        tmp.id = key;
         tmp.addEventListener('click', showMessage, false);
         document.body.appendChild(tmp);
+    }
+    if (i === 1) {
+        showMessage({target: {id: key}});
     }
     document.body.style.width = 70 * document.getElementsByTagName('canvas').length + 'px';
 });

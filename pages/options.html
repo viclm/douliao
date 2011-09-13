@@ -179,8 +179,15 @@ section > div:only-of-type label {
             <section id="remindSection">
                 <h3>消息提示：</h3>
                 <div>
-                    <label><input type="checkbox" name="soundRemind" value="orange">声音</label>
-                    <label><input type="checkbox" name="popupRemind" value="blue">弹出窗口</label>
+                    <label><input type="checkbox" name="soundRemind">声音</label>
+                    <label><input type="checkbox" name="popupRemind">弹出窗口</label>
+                </div>
+			</section>
+			<section id="offlineSection">
+                <h3>离线推送：</h3>
+                <div>
+					<label><input type="checkbox" name="offline">开启离线推送</label>
+					<p class="commit">即使关闭聊天窗口，也会得到消息推送</p>
                 </div>
             </section>
         </div>
