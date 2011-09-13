@@ -4,7 +4,10 @@ chrome.extension.sendRequest({cmd: "getCaptcha", people: people}, function(respo
 });
 
 document.querySelector('form').addEventListener('submit', function (e) {
-	var string = this.querySelector('input[type=textbox]').value;
+	e.preventDefault();
+	var string = this.querySelector('input[type=text]').value;
+	console.log(string)
 	chrome.extension.sendRequest({cmd: 'sendHistory', string: string, people: people});
 	window.close();
+	return false;
 }, false);

@@ -47,10 +47,9 @@
                 }
                 break;
             case 'setStatus':
-                var img = self.chatWindow.querySelector('header img');
-                img.src = self.drawStatus(msg.status);
-                img.className = msg.status;
-                img.style.display = '';
+                if (!msg.status) {
+					self.chatWindow.querySelector('header').style.display = '';
+				}
                 break;
             }
         });
@@ -132,16 +131,13 @@
     DChat.prototype.createUI = function () {
         var aside = document.createElement('aside'), metaBtn, html;
         aside.id = 'dchat';
-        html = '<header><img style="display: none" /><p>' + (this.sign ? this.sign : '') + '</p></header><section><div></div><div><textarea></textarea></div></section>';
+        html = '<header style="display: none">加为豆聊好友</header><section><div class="msgList"></div><div class="textbox"><textarea></textarea></div></section>';
         aside.innerHTML = html;
         document.body.appendChild(aside);
-        aside.querySelector('header img').addEventListener('click', this.proxy(function (e) {
-            if (e.target.className === 'false') {
-                var self = this;
-                this.port.postMessage({cmd: 'addFriend', people: self.people, name: self.name, icon: self.icon, sign: self.sign});
-                e.target.className = 'true';
-                e.target.src = this.drawStatus(true);
-            }
+        aside.querySelector('header').addEventListener('click', this.proxy(function (e) {
+            var self = this;
+            this.port.postMessage({cmd: 'addFriend', people: self.people, name: self.name, icon: self.icon, sign: self.sign});
+            e.target.style.display = 'none';
         }, this), false);
         this.msgList = aside.querySelector('section>div');
         this.textbox = aside.querySelector('textarea');

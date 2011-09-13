@@ -1,5 +1,5 @@
 'use strict';
-localStorage.config || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true}));
+localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true}));
 
 function Resource(args) {
     this.method = args.method || 'get';
@@ -88,6 +88,7 @@ function Mail(args) {
     this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
 
     this.timer = null;
+    this.status = 'offline';
     this.sound = document.getElementById('alert');
     this.unread = [];
     this.history = {};
@@ -110,6 +111,10 @@ function Mail(args) {
     }).request();
 
     localStorage.friends || localStorage.setItem('friends', '{}');
+
+	if (JSON.parse(localStorage.config).offline) {
+		this.timer = setInterval(self.proxy(this.receive, this), 60000);
+	}
 
     chrome.extension.onConnect.addListener(this.proxy(this.portHandler, this));
 
@@ -215,15 +220,20 @@ Mail.prototype.portHandler = function(port) {
                             self.peopleNum -= 1;
                             if (self.peopleNum === 0) {
                                 clearInterval(self.timer);
-                                self.timer = null;
+								if (JSON.parse(localStorage.config).offline) {
+									self.timer = setInterval(self.proxy(self.receive, self), 60000);
+								}
+								self.status = 'offline';
                             }
                         }
                     });
                 }
 
-                if (self.peopleNum > 0 && self.timer === null) {
+                if (self.peopleNum > 0 && self.status === 'offline') {
+					self.timer && clearInterval(self.timer);
                     self.receive();
                     self.timer = setInterval(self.proxy(self.receive, self), 10000);
+					self.status = 'online';
                 }
                 port.postMessage({cmd: 'setStatus', status: msg.people in JSON.parse(localStorage.getItem('friends'))});
                 break;
@@ -321,7 +331,8 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         sendResponse({url: self.history[request.people].captcha.string});
         break;
     case 'sendHistory':
-        self.history[request.people].captcha.string = request.string;console.log(self.history[request.people])
+        self.history[request.people].captcha.string = request.string;
+		console.log(self.history[request.people], request);
         self.send(self.history[request.people], function () {
             delete self.history[request.people];
         }, function (e) {

@@ -15,8 +15,8 @@ chrome.extension.sendRequest({cmd: 'getPeopleInfo', people: location.href.match(
         }
         msgList.appendChild(div);
     }
-    msgList.parentNode.style.height = (window.innerHeight - 29) * 0.96 + 'px';
+    msgList.parentNode.style.height = window.innerHeight * 0.96 + 'px';
     window.onresize = function () {
-        msgList.parentNode.style.height = (window.innerHeight - 29) * 0.96 + 'px';
+        msgList.parentNode.style.height = window.innerHeight * 0.96 + 'px';
     }
 });
