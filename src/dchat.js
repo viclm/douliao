@@ -95,10 +95,6 @@
             }
             else {
                 this.addContent('<img src="' + this.me.icon + '"><p>' + value + '</p>', 'right');
-                if (this.ad) {
-                    value += '\n\n' + this.ad;
-                    this.ad = undefined;
-                }
                 this.port.postMessage({cmd: 'send', content: value, people: self.people});
             }
 

@@ -369,7 +369,7 @@ Mail.prototype.send = function (msg, load, error) {
     +'<uri>http://api.douban.com/people/' + msg.people + '</uri>'
         +'</db:entity>'
     +'<content>' + msg.content + '</content>'
-    +'<title>' + (msg.title || msg.content.slice(0, 9)) + '</title>'
+    +'<title>' + (msg.title || '通过豆聊发送的消息') + '</title>'
     +(msg.captcha ? ('<db:attribute name="captcha_token">' + msg.captcha.token + '</db:attribute><db:attribute name="captcha_string">' + msg.captcha.string + '</db:attribute>') : '')
     +'</entry>', self;
 
