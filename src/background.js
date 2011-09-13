@@ -1,5 +1,6 @@
 'use strict';
-localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true}));
+localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) && (JSON.parse(localStorage.config).history !== undefined)
+|| (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true, history: true, oHistory: true}));
 
 function Resource(args) {
     this.method = args.method || 'get';
@@ -183,47 +184,54 @@ Mail.prototype.portHandler = function(port) {
 
                     port.onDisconnect.addListener(function (port) {
                         if (port.name === 'dchat') {
-                            var people = port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1], history = self.peopleInfo[people].history, content = '', i , len, item;
-                            if (history.length > 0) {
-                                for (i = 0, len = history.length ; i < len ; i += 1) {
-                                    item = history[i];
-                                    content += '>' + item.name + '说:\n' + item.content + '\n\n';
-                                }
-                                self.send(
-                                    {people: self.me.id, title: '和' + msg.name + '的聊天记录', content: content},
-                                    function () {},
-                                    function (e) {
-                                        if (e.status === 403) {
-                                            self.history[people] = {
-                                                people: self.me.id,
-                                                title: '和' + msg.name + '的聊天记录',
-                                                content: content,
-                                                captcha: {
-                                                    token: /=(.+?)&amp;/.exec(e.responseText)[1],
-                                                    string: /captcha_url=(.+)$/.exec(e.responseText)[1]
-                                                }
-                                            };console.log(self.history)
-                                            chrome.windows.create({
-                                                url: '../pages/captcha.html#' + people,
-                                                width: 500,
-                                                height: 240,
-                                                type: 'popup'
-                                            });
-                                        }
+                            var people = port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1], history = self.peopleInfo[people].history, content = '', i , len, item, config;
+                            config = JSON.parse(localStorage.config);
+                            if (config.history && config.oHistory) {
+                                if (history.length > 0) {
+                                    for (i = 0, len = history.length ; i < len ; i += 1) {
+                                        item = history[i];
+                                        content += '>' + item.name + '说:\n' + item.content + '\n\n';
                                     }
-                                );
+                                    self.send(
+                                        {people: self.me.id, title: '和' + msg.name + '的聊天记录', content: content},
+                                        function () {},
+                                        function (e) {
+                                            if (e.status === 403) {
+                                                self.history[people] = {
+                                                    people: self.me.id,
+                                                    title: '和' + msg.name + '的聊天记录',
+                                                    content: content,
+                                                    captcha: {
+                                                        token: /=(.+?)&amp;/.exec(e.responseText)[1],
+                                                        string: /captcha_url=(.+)$/.exec(e.responseText)[1]
+                                                    }
+                                                };console.log(self.history)
+                                                chrome.windows.create({
+                                                    url: '../pages/captcha.html#' + people,
+                                                    width: 500,
+                                                    height: 240,
+                                                    type: 'popup'
+                                                });
+                                            }
+                                        }
+                                    );
+                                }
                             }
-                            if (self.peopleInfo[people].mails.length > 0) {
-                                self.delete(self.peopleInfo[people].mails);
+
+                            if (!config.history || config.history && config.oHistory) {
+                                if (self.peopleInfo[people].mails.length > 0) {
+                                    self.delete(self.peopleInfo[people].mails);
+                                }
                             }
+
                             delete self.peopleInfo[people];
                             self.peopleNum -= 1;
                             if (self.peopleNum === 0) {
-                                clearInterval(self.timer);
-								if (JSON.parse(localStorage.config).offline) {
-									self.timer = setInterval(self.proxy(self.receive, self), 60000);
-								}
-								self.status = 'offline';
+                                clearInterval(self.timer);console.log(config.offline, config)
+                                if (config.offline) {
+                                    self.timer = setInterval(self.proxy(self.receive, self), 60000);
+                                }
+                                self.status = 'offline';
                             }
                         }
                     });

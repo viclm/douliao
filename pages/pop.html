@@ -5,31 +5,31 @@
         <title></title>
         <style type="text/css">
             body {margin: 0; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif}
-			#dchat {width: 100%; border: none; position: static;}
+            #dchat {width: 100%; border: none; position: static;}
 
-			#dchat header {text-align: center; position: absolute; top: 0; left: 0; z-index: 2; background-color: rgba(33,154,68,0.5); cursor: pointer; width: 100%; padding: 5px 0; color: #777;}
+            #dchat header {text-align: center; position: absolute; top: 0; left: 0; z-index: 2; background-color: rgba(33,154,68,0.5); cursor: pointer; width: 100%; padding: 5px 0; color: white;}
 
-			#dchat section {padding: 2%; height: 260px;}
-			#dchat section div.msgList {height: 78%; overflow: auto;}
-			#dchat section div.msgList div {position: relative; overflow: hidden; margin-bottom: 2px;}
-			#dchat section div.left * {float: left}
-			#dchat section div.right * {float: right}
-			#dchat section div.left p, #dchat section div.right img {margin-left: 10px;}
-			#dchat section div img {width: 32px; height: 32px; border-radius: 5px;}
-			#dchat section div p {background: -webkit-linear-gradient(top, #62c462, #57a957);
-				border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25); border-width: 1px; border-style: solid; border-radius: 4px;
-				-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);color: #fff; line-height: 18px; max-width: 65%; padding: 0 5px;}
-			#dchat section div.right p {background: -webkit-linear-gradient(top, #fceec1, #eedc94); color: #404040;}
-			#dchat section div.captcha img{width: 213px; height: 34px;}
+            #dchat section {padding: 2%; height: 260px;}
+            #dchat section div.msgList {height: 78%; overflow: auto;}
+            #dchat section div.msgList div {position: relative; overflow: hidden; margin-bottom: 2px;}
+            #dchat section div.left * {float: left}
+            #dchat section div.right * {float: right}
+            #dchat section div.left p, #dchat section div.right img {margin-left: 10px;}
+            #dchat section div img {width: 32px; height: 32px; border-radius: 5px;}
+            #dchat section div p {background: -webkit-linear-gradient(top, #62c462, #57a957);
+                border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25); border-width: 1px; border-style: solid; border-radius: 4px;
+                -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);color: #fff; line-height: 18px; max-width: 65%; padding: 0 5px;}
+            #dchat section div.right p {background: -webkit-linear-gradient(top, #fceec1, #eedc94); color: #404040;}
+            #dchat section div.captcha img{width: 213px; height: 34px;}
 
-			#dchat section div.textbox {height: 20%; margin-top: 2%; padding: 5px; background-color: white;}
-			#dchat section textarea {width: 100%; height: 100%; min-height: 45px; -webkit-transition: border linear 0.2s, box-shadow linear 0.2s; outline:none;
-				-webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #CCC; -webkit-box-sizing:border-box; border-radius: 3px; padding: 5px;}
-			#dchat section textarea:focus {border-color: rgba(82, 168, 236, 0.8); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset, 0 0 8px rgba(82, 168, 236, 0.6);}
+            #dchat section div.textbox {height: 20%; margin-top: 2%; padding: 5px; background-color: white;}
+            #dchat section textarea {width: 100%; height: 100%; min-height: 45px; -webkit-transition: border linear 0.2s, box-shadow linear 0.2s; outline:none;
+                -webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #CCC; -webkit-box-sizing:border-box; border-radius: 3px; padding: 5px;}
+            #dchat section textarea:focus {border-color: rgba(82, 168, 236, 0.8); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset, 0 0 8px rgba(82, 168, 236, 0.6);}
         </style>
     </head>
-	<body>
-		<script type="text/javascript" src="../src/dchat.js"></script>
-		<script type="text/javascript" src="../src/pop.js"></script>
+    <body>
+        <script type="text/javascript" src="../src/dchat.js"></script>
+        <script type="text/javascript" src="../src/pop.js"></script>
     </body>
 </html>

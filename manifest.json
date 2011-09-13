@@ -1,6 +1,6 @@
 {
     "name": "豆聊",
-    "version": "1.6",
+    "version": "1.6.1",
     "description": "用QQ的方式聊豆邮",
     "icons": {
         "16": "assets/icon16.png",
