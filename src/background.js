@@ -401,7 +401,7 @@ Mail.prototype.receive = function () {
         data: 'start-index=1&alt=json',
         load: function (data, e) {
             var i, len, key, people, mails = [];
-            data = JSON.parse(data).entry;console.log(data)
+            data = JSON.parse(data).entry;
             for (i = 0, len = data.length ; i < len ; i += 1) {
                 new Resource({
                     url: data[i].id['$t'],
