@@ -1,6 +1,6 @@
 {
     "name": "豆聊",
-    "version": "1.6.2",
+    "version": "2.0",
     "description": "用QQ的方式聊豆邮",
     "icons": {
         "16": "assets/icon16.png",
@@ -11,8 +11,7 @@
     "background_page": "pages/background.html",
     "browser_action": {
         "default_icon": "assets/icon16.png",
-        "default_title": "豆聊",
-        "default_popup": "pages/list.html"
+        "default_title": "豆聊"
     },
     "content_scripts": [
         {

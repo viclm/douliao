@@ -25,9 +25,9 @@ function openContextmenu(e) {
 
 chrome.extension.sendRequest({cmd: 'getList'}, function(response) {
     var me = response.me, friends = response.friends, key, div;
-    header.querySelector('h1').appendChild(document.createTextNode(me.name));
-    header.querySelector('p').appendChild(document.createTextNode(me.sign));
-    header.querySelector('img').src = me.icon;
+    //header.querySelector('h1').appendChild(document.createTextNode(me.name));
+    //header.querySelector('p').appendChild(document.createTextNode(me.sign));
+    //header.querySelector('img').src = me.icon;
 
     contextmenu = document.createElement('div');
     contextmenu.innerHTML = '删除好友';

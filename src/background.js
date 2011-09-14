@@ -140,6 +140,10 @@ function Mail(args) {
             }
         });
     });
+
+    chrome.browserAction.onClicked.addListener(function(tab) {
+        chrome.tabs.create({url: '../pages/douliao.html'});
+    });
 }
 
 Mail.prototype.proxy = function (fn, obj) {
