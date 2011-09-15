@@ -1,6 +1,8 @@
 'use strict';
-localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) && (JSON.parse(localStorage.config).history !== undefined)
-|| (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true, history: true, oHistory: true}));
+localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) && (JSON.parse(localStorage.config).history !== undefined) && (JSON.parse(localStorage.config).deleteMails !== undefined)
+|| (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true, history: true, deleteMails: false}));
+
+localStorage.friends || localStorage.setItem('friends', '{}');
 
 function Resource(args) {
     this.method = args.method || 'get';
@@ -89,10 +91,12 @@ function Mail(args) {
     this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
 
     this.timer = null;
+    this.port = null;
     this.status = 'offline';
     this.sound = document.getElementById('alert');
     this.unread = [];
     this.history = {};
+    this.mails = [];
 
     this.popInfo = null;
 
@@ -111,36 +115,13 @@ function Mail(args) {
         }
     }).request();
 
-    localStorage.friends || localStorage.setItem('friends', '{}');
 
-	if (JSON.parse(localStorage.config).offline) {
-		this.timer = setInterval(self.proxy(this.receive, this), 60000);
-	}
+    if (JSON.parse(localStorage.config).offline) {
+        this.timer = setInterval(self.proxy(this.receive, this), 60000);
+    }
 
     chrome.extension.onConnect.addListener(this.proxy(this.portHandler, this));
-
     chrome.extension.onRequest.addListener(this.proxy(this.requestHandler, this));
-
-    chrome.tabs.onSelectionChanged.addListener(function (tabId, object) {
-        if (self.peopleNum === 0) {return;}
-        for (var key in self.peopleInfo) {
-            if (tabId === self.peopleInfo[key].port.tab.id) {
-                self.setUnread(key);
-            }
-        }
-    });
-
-    chrome.windows.onFocusChanged.addListener(function (windowId) {
-        if (windowId === -1) {return;}
-        chrome.tabs.getSelected(windowId, function (tab) {
-            for (var key in self.peopleInfo) {
-                if (tab.id === self.peopleInfo[key].port.tab.id) {
-                    self.setUnread(key);
-                }
-            }
-        });
-    });
-
     chrome.browserAction.onClicked.addListener(function(tab) {
         chrome.tabs.create({url: '../pages/douliao.html'});
     });
@@ -153,8 +134,13 @@ Mail.prototype.proxy = function (fn, obj) {
 };
 
 Mail.prototype.portHandler = function(port) {
-	var self = this;
+    var self = this;
     if (port.name === 'dchat') {
+        self.port = port;
+        self.timer && clearInterval(self.timer);
+        self.receive();
+        self.timer = setInterval(self.proxy(self.receive, self), 10000);
+
         port.onMessage.addListener(function(msg) {
             switch (msg.cmd) {
             case 'send':
@@ -162,7 +148,7 @@ Mail.prototype.portHandler = function(port) {
                     msg,
                     function (data, e) {
                         port.postMessage({cmd: 'sended', result: true});
-                        self.peopleInfo[msg.people].history.push({name: '我', content: msg.content});
+                        JSON.parse(localStorage.config).history && self.save(msg.people, 'me', msg.content);
                     },
                     function (e) {console.log(e, e.status)
                         if (e.status === 403) {
@@ -181,74 +167,6 @@ Mail.prototype.portHandler = function(port) {
                         }
                     });
                 break;
-            case 'receivestart':
-                if (self.peopleInfo[msg.people] === undefined) {
-                    self.peopleNum += 1;
-                    self.peopleInfo[msg.people] = {port: port, name: msg.name, history: msg.history || [], mails: msg.mails || []};
-
-                    port.onDisconnect.addListener(function (port) {
-                        if (port.name === 'dchat') {
-                            var people = port.tab.url.match(/[\/#]([^\/#]+)\/?$/)[1], history = self.peopleInfo[people].history, content = '', i , len, item, config;
-                            config = JSON.parse(localStorage.config);
-                            if (config.history && config.oHistory) {
-                                if (history.length > 0) {
-                                    for (i = 0, len = history.length ; i < len ; i += 1) {
-                                        item = history[i];
-                                        content += '>' + item.name + '说:\n' + item.content + '\n\n';
-                                    }
-                                    self.send(
-                                        {people: self.me.id, title: '和' + msg.name + '的聊天记录', content: content},
-                                        function () {},
-                                        function (e) {
-                                            if (e.status === 403) {
-                                                self.history[people] = {
-                                                    people: self.me.id,
-                                                    title: '和' + msg.name + '的聊天记录',
-                                                    content: content,
-                                                    captcha: {
-                                                        token: /=(.+?)&amp;/.exec(e.responseText)[1],
-                                                        string: /captcha_url=(.+)$/.exec(e.responseText)[1]
-                                                    }
-                                                };console.log(self.history)
-                                                chrome.windows.create({
-                                                    url: '../pages/captcha.html#' + people,
-                                                    width: 500,
-                                                    height: 240,
-                                                    type: 'popup'
-                                                });
-                                            }
-                                        }
-                                    );
-                                }
-                            }
-
-                            if (!config.history || config.history && config.oHistory) {
-                                if (self.peopleInfo[people].mails.length > 0) {
-                                    self.delete(self.peopleInfo[people].mails);
-                                }
-                            }
-
-                            delete self.peopleInfo[people];
-                            self.peopleNum -= 1;
-                            if (self.peopleNum === 0) {
-                                clearInterval(self.timer);console.log(config.offline, config)
-                                if (config.offline) {
-                                    self.timer = setInterval(self.proxy(self.receive, self), 60000);
-                                }
-                                self.status = 'offline';
-                            }
-                        }
-                    });
-                }
-
-                if (self.peopleNum > 0 && self.status === 'offline') {
-					self.timer && clearInterval(self.timer);
-                    self.receive();
-                    self.timer = setInterval(self.proxy(self.receive, self), 10000);
-					self.status = 'online';
-                }
-                port.postMessage({cmd: 'setStatus', status: msg.people in JSON.parse(localStorage.getItem('friends'))});
-                break;
             case 'addFriend':
                 var friends = JSON.parse(localStorage.getItem('friends'));
                 if (friends[msg.people] === undefined) {
@@ -258,6 +176,23 @@ Mail.prototype.portHandler = function(port) {
                     localStorage.setItem('friends', JSON.stringify(friends));
                 }
                 break;
+            }
+        });
+
+        port.onDisconnect.addListener(function (port) {
+            if (port.name === 'dchat') {
+                self.port = null;
+                var config = JSON.parse(localStorage.config);
+
+                if (config.deleteMails) {
+                    self.delete(self.mails);
+                    self.mails = [];
+                }
+
+                clearInterval(self.timer);console.log(config.offline, config)
+                if (config.offline) {
+                    self.timer = setInterval(self.proxy(self.receive, self), 60000);
+                }
             }
         });
     }
@@ -330,9 +265,9 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
     case 'getUnread':
         sendResponse({unread: self.unread});
         break;
-    case 'getList':
+    case 'initial':
         self.receive();
-        sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends'))});
+        sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends')), unread: self.unread});
         break;
     case 'deleteFriend':
         var friends = JSON.parse(localStorage.getItem('friends'));
@@ -344,7 +279,7 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         break;
     case 'sendHistory':
         self.history[request.people].captcha.string = request.string;
-		console.log(self.history[request.people], request);
+        console.log(self.history[request.people], request);
         self.send(self.history[request.people], function () {
             delete self.history[request.people];
         }, function (e) {
@@ -373,7 +308,7 @@ Mail.prototype.send = function (msg, load, error) {
     +'<uri>http://api.douban.com/people/' + msg.people + '</uri>'
         +'</db:entity>'
     +'<content>' + msg.content + '</content>'
-    +'<title>' + (msg.title || '通过豆聊发送的消息') + '</title>'
+    +'<title>通过豆聊发送的消息</title>'
     +(msg.captcha ? ('<db:attribute name="captcha_token">' + msg.captcha.token + '</db:attribute><db:attribute name="captcha_string">' + msg.captcha.string + '</db:attribute>') : '')
     +'</entry>', self;
 
@@ -387,22 +322,24 @@ Mail.prototype.send = function (msg, load, error) {
 };
 
 Mail.prototype.delete = function (mails) {
-    var entry = '<?xml version="1.0" encoding="UTF-8"?>'
-    +'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:db="http://www.douban.com/xmlns/" xmlns:gd="http://schemas.google.com/g/2005" xmlns:opensearch="http://a9.com/-/spec/opensearchrss/1.0/">', i, len;
+    if (mails.length > 0) {
+        var entry = '<?xml version="1.0" encoding="UTF-8"?>'
+        +'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:db="http://www.douban.com/xmlns/" xmlns:gd="http://schemas.google.com/g/2005" xmlns:opensearch="http://a9.com/-/spec/opensearchrss/1.0/">', i, len;
 
-    for (i = 0, len = mails.length ; i < len ; i += 1) {
-        entry += '<entry><id>' + mails[i] + '</id></entry>';
+            for (i = 0, len = mails.length ; i < len ; i += 1) {
+            entry += '<entry><id>' + mails[i] + '</id></entry>';
+        }
+
+        entry += '</feed>';
+
+        new Resource({
+            url: 'http://api.douban.com/doumail/delete',
+                method: 'post',
+            data: entry,
+            load: function () {},
+            error: function () {console.log(arguments)}
+        }).request();
     }
-
-    entry += '</feed>';
-
-    new Resource({
-        url: 'http://api.douban.com/doumail/delete',
-        method: 'post',
-        data: entry,
-        load: function () {},
-        error: function () {console.log(arguments)}
-    }).request();
 };
 
 Mail.prototype.receive = function () {
@@ -424,9 +361,8 @@ Mail.prototype.receive = function () {
                         var response = {}, str1, str2;
                         response.cmd = 'received';
                         response.people = data.author.link[1]['@href'].match(/\/([^\/]+)\/?$/)[1];
-                        if (response.people === self.me.id) {
-                            return;
-                        }
+                        response.name = data.author.name['$t'];
+                        response.icon = data.author.link[2] && data.author.link[2]['@href'];
                         response.timestamp = data.published['$t'];
 
                         str1 = data.content['$t'].trim();
@@ -443,36 +379,16 @@ Mail.prototype.receive = function () {
                             str2 = str1;
                         }
                         response.content = str2;console.log(str1, '-------------------------------------------', str2)
-                        if (self.peopleInfo[response.people]) {
-                            self.peopleInfo[response.people].port.postMessage(response);
-                            self.peopleInfo[response.people].history.push({name: data.author.name['$t'], content: str2});
-                            self.peopleInfo[response.people].mails.push(data.id['$t']);
+                        if (self.port) {
+                            self.port.postMessage(response);
                         }
-                        JSON.parse(localStorage.config).soundRemind && self.sound.play();
-                        chrome.windows.getLastFocused(function (win) {
-                            if (win.focused) {
-                                chrome.tabs.getSelected(win.id, function (tab) {
-                                    if (!self.peopleInfo[response.people] || self.peopleInfo[response.people].port.tab.id !== tab.id) {
-                                        self.setUnread(response.people, {
-                                            mailId: data.id['$t'],
-                                            icon: data.author.link[2] && data.author.link[2]['@href'],
-                                            name: data.author.name['$t'],
-                                            content: str2,
-                                            sign: ''
-                                        });
-                                    }
-                                });
-                            }
-                            else {
-                                self.setUnread(response.people, {
-                                    mailId: data.id['$t'],
-                                    icon: data.author.link[2] && data.author.link[2]['@href'],
-                                    name: data.author.name['$t'],
-                                    content: str2,
-                                    sign: ''
-                                });
-                            }
-                        });
+                        else {
+                            self.unread.push(response);
+                        }
+
+                        self.mails.push(data.id['$t']);
+                        JSON.parse(localStorage.config).history && self.save(response.people, 'ta', str2);
+                        self.notify();
                     }
                 }).request();
             }
@@ -480,10 +396,54 @@ Mail.prototype.receive = function () {
     }).request();
 };
 
-Mail.prototype.setUnread = function (people, info) {
-	var res = [];
-    if (info === undefined) {
-        var i = 0;
+Mail.prototype.notify = function (people, info) {
+    var config = JSON.parse(localStorage.config), notification;
+
+    chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+
+    if (config.soundRemind) {
+        this.sound.play();
+    }
+
+    if (config.popupRemind) {
+        chrome.windows.getLastFocused(function (win) {
+            if (win.focused) {
+                chrome.tabs.getSelected(win.id, function (tab) {
+                    if (self.port === null || self.port.tab.id !== tab.id) {
+                        notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
+                        notification.show();
+                        setTimeout(function () {
+                            notification.cancel();
+                        }, 3000);
+                    }
+                });
+            }
+            else {
+                notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
+                notification.show();
+                setTimeout(function () {
+                    notification.cancel();
+                }, 3000);
+            }
+        });
+    }
+}
+
+Mail.prototype.save = function (people, from, content) {
+
+};
+
+
+oauth(function () {
+    new Mail();
+});
+/*
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    if (tab.status !== 'complete' && /^http:\/\/www.douban.com\/people\/[^\/]+?\/?$/i.test(tab.url)) {
+        chrome.tabs.executeScript(tabId, {file: "src/contentscript.js"});
+    }
+});
+var i = 0;
         while (i < this.unread.length) {
             if (this.unread[i].people === people) {
                 res = res.concat(this.unread.splice(i, 1));
@@ -492,33 +452,4 @@ Mail.prototype.setUnread = function (people, info) {
                 i += 1;
             }
         }
-    }
-    else {
-        info.people = people;
-        this.unread[this.unread.length] = info;
-		res.push(info);
-        if (JSON.parse(localStorage.config).popupRemind) {
-            var notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
-            notification.show();
-            setTimeout(function () {
-                notification.cancel();
-            }, 3000);
-        }
-    }
-    var num = this.unread.length;
-    chrome.browserAction.setBadgeText({text: num > 0 ? num.toString() : ''});
-    chrome.browserAction.setPopup({popup: num > 0 ? '../pages/popup.html' : '../pages/list.html'});
-	return res;
-}
-
-
-oauth(function () {
-	var doumail = new Mail();
-});
-/*
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (tab.status !== 'complete' && /^http:\/\/www.douban.com\/people\/[^\/]+?\/?$/i.test(tab.url)) {
-        chrome.tabs.executeScript(tabId, {file: "src/contentscript.js"});
-    }
-});
 */
