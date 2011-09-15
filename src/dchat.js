@@ -9,7 +9,6 @@
         this.mails = args.mails;
         this.me = args.me;
 
-        this.chatWindow = null;
         this.port = null;
 
         this.isLock = false;
@@ -26,7 +25,6 @@
 
     DChat.prototype.start = function () {
         var self = this;
-        this.chatWindow = this.createUI();
 
         this.port = chrome.extension.connect({name: 'dchat'});
         this.port.postMessage({cmd: 'receivestart', people: self.people, name: self.name, history: self.history, mails: self.mails});
@@ -45,11 +43,6 @@
                     self.addContent('<img src="' + self.icon + '"><p>' + msg.content + '</p>', 'left');
                     self.lock(false);
                 }
-                break;
-            case 'setStatus':
-                if (!msg.status) {
-					self.chatWindow.querySelector('header').style.display = '';
-				}
                 break;
             }
         });
@@ -122,107 +115,6 @@
         this.textbox.style.backgroundColor = status ? '#ddd' : '#fff';
         this.textbox.value = status ? '鼠标双击解锁输入框，考虑到对方可能没有安装豆聊，请尽量不要连续发送信息给对方造成不便' : '';
         this.isLock = status;
-    };
-
-    DChat.prototype.createUI = function () {
-        var aside = document.createElement('aside'), metaBtn, html;
-        aside.id = 'dchat';
-        html = '<header style="display: none">加为豆聊好友</header><section><div class="msgList"></div><div class="textbox"><textarea></textarea></div></section>';
-        aside.innerHTML = html;
-        document.body.appendChild(aside);
-        aside.querySelector('header').addEventListener('click', this.proxy(function (e) {
-            var self = this;
-            this.port.postMessage({cmd: 'addFriend', people: self.people, name: self.name, icon: self.icon, sign: self.sign});
-            e.target.style.display = 'none';
-        }, this), false);
-        this.msgList = aside.querySelector('section>div');
-        this.textbox = aside.querySelector('textarea');
-        this.textbox.addEventListener('keyup', this.proxy(this.send, this), false);
-		this.textbox.parentNode.addEventListener('click', this.proxy(function (e) {console.log(e.detail)
-			if (e.detail === 2) {
-				this.lock(false);
-				e.preventDefault();
-			}
-		}, this), false);
-        return aside;
-    };
-
-    DChat.prototype.drawMin = function () {
-        var canvas = document.createElement('canvas'), ctx;
-        canvas.width = 100;
-        canvas.height = 100;
-        canvas.style.backgroundColor = 'rgba(0, 0, 0, 1)';
-        ctx = canvas.getContext('2d');
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = '#0C7823';
-        ctx.beginPath();
-        ctx.moveTo(5,85);
-        ctx.lineTo(95, 85);
-        ctx.stroke();
-        return canvas.toDataURL();
-    };
-
-    DChat.prototype.drawPop = function () {
-        var canvas = document.createElement('canvas'), ctx;
-        canvas.width = 100;
-        canvas.height = 100;
-        canvas.style.backgroundColor = 'rgba(0, 0, 0, 1)';
-        ctx = canvas.getContext('2d');
-        ctx.strokeStyle = '#0C7823';
-        ctx.fillStyle = '#0C7823';
-        ctx.beginPath();
-        ctx.moveTo(95, 5);
-        ctx.lineTo(45, 5);
-        ctx.lineTo(95, 55);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.lineWidth = 10;
-        ctx.moveTo(75, 25);
-        ctx.lineTo(5, 95);
-        ctx.stroke();
-        return canvas.toDataURL();
-    };
-
-    DChat.prototype.drawClose = function () {
-        var canvas = document.createElement('canvas'), ctx;
-        canvas.width = 100;
-        canvas.height = 100;
-        canvas.style.backgroundColor = 'rgba(0, 0, 0, 1)';
-        ctx = canvas.getContext('2d');
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = '#0C7823';
-        ctx.beginPath();
-        ctx.moveTo(5,5);
-        ctx.lineTo(95, 95);
-        ctx.moveTo(95, 5);
-        ctx.lineTo(5, 95);
-        ctx.stroke();
-        return canvas.toDataURL();
-    };
-
-    DChat.prototype.drawStatus = function (isFriend) {
-        var canvas = document.createElement('canvas'), ctx;
-        canvas.width = 100;
-        canvas.height = 100;
-        canvas.style.backgroundColor = 'rgba(0, 0, 0, 1)';
-        ctx = canvas.getContext('2d');
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = '#0C7823';
-        ctx.beginPath();
-        if (isFriend) {
-            ctx.moveTo(5, 50);
-            ctx.lineTo(35, 95);
-            ctx.lineTo(95, 35);
-        }
-        else {
-            ctx.moveTo(5, 50);
-            ctx.lineTo(95, 50);
-            ctx.moveTo(50, 5);
-            ctx.lineTo(50, 95);
-        }
-        ctx.stroke();
-        return canvas.toDataURL();
     };
 
     window.DChat = DChat;
