@@ -6,7 +6,7 @@
         <style type="text/css">
             body {margin: 0; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif; display: -webkit-box; -webkit-box-orient: horizontal; color: #333333;}
             img {width: 32px; height: 32px; border-radius: 5px;}
-            h1, h2 {font-size: 12px; margin: 0; margin: 0; line-height: 18px;}
+            h1, h2 {font-size: 12px; margin: 0; margin: 0; line-height: 18px; position: relative;}
             h1 {font-size: 16px; text-align: center; line-height: 30px;}
             p {margin: 0; color: grey;}
             input[type=button], input[type=submit] {background-color: #E6E6E6; background-image: -webkit-linear-gradient(#ffffff, #ffffff 25%, #e6e6e6); background-repeat: no-repeat; border: 1px solid #CCC; border-radius: 4px; 
@@ -20,8 +20,9 @@
             header {background: -webkit-linear-gradient(top, #D1EED1,#62c462); height: 30px;}
             header .entry {margin-bottom: 5px;}
             div.entry {position: relative; overflow: hidden; white-space: nowrap;}
-            div.entry div {float: left; max-width: 142px; overflow: hidden;}
-            div.entry img {float: right;}
+            div.entry div {float: left; max-width: 80%; overflow: hidden;}
+			div.entry img {float: right;}
+			div.entry span {z-index: 2; position: absolute; top: -5px; right: 0; background-color: red; border: 1px solid black; border-radius: 10px; display: inline-block; width: 16px; height: 16px; line-height: 16px; font-size: 9px; text-align: center; color: white; font-weight: bold}
 
             section {}
             section .entry {padding: 5px; border-bottom: 1px solid #BFE7BF;}

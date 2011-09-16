@@ -27,7 +27,10 @@
                 div.className = 'entry';
                 div.id = key;
                 div.innerHTML = '<div><h2>' + friends[key].name + '</h2><p> ' + friends[key].sign + ' </p></div><img src="' + friends[key].icon + '" />';
+				var span = document.createElement('span');
+				span.innerHTML = 2;
                 self.friendsList.appendChild(div);
+				div.querySelector('h2').appendChild(span);
             }
 
             self.me = response.me;
