@@ -27,15 +27,19 @@
                 div.className = 'entry';
                 div.id = key;
                 div.innerHTML = '<div><h2>' + friends[key].name + '</h2><p> ' + friends[key].sign + ' </p></div><img src="' + friends[key].icon + '" />';
-				var span = document.createElement('span');
-				span.innerHTML = 2;
                 self.friendsList.appendChild(div);
-				div.querySelector('h2').appendChild(span);
+
+                friends[key].unread = [];
             }
 
             self.me = response.me;
             self.friends = friends;
             self.start();
+
+            if (response.current) {
+                self.open({target: document.getElementById(response.current.people)});
+            }
+            self.receive.apply(self, response.unread);
         });
     }
 
@@ -65,9 +69,22 @@
     };
 
     DChat.prototype.open = function (e) {
-        var target = e.target;
-        if (this.current !== target.id) {
-            this.messageList.innerHTML = target.rel || '';
+        var target = e.target, id = target.id, i, len, self = this;
+        if (this.current !== id) {console.log(this.current, id)
+            if (this.current) {
+                this.friends[this.current].history = this.messageList.innerHTML;
+            }
+            this.messageList.innerHTML = this.friends[id].history || '';
+            for (i = 0, len = this.friends[id].unread.length ; i < len ; i += 1) {
+                this.addContent('<img src="' + this.friends[id].unread[i].icon + '"><p>' + this.friends[id].unread[i].content + '</p>', 'left');
+                //this.lock(false);
+            }
+            if (len > 0) {
+                this.friends[id].unread = [];
+                target.querySelector('h2').removeChild(target.querySelector('h2 span'));
+                chrome.extension.sendRequest({cmd: 'setUnread', unread: id});
+            }
+
             if (this.current) {
                 document.getElementById(this.current).className = 'entry';
             }
@@ -75,14 +92,14 @@
                 this.content.style.left = '30%';
             }
             target.className = 'entry active';
-            this.current = target.id;
+            this.current = id;
         }
     };
 
     DChat.prototype.close = function () {
         var entry = document.getElementById(this.current);
         entry.className = 'entry';
-        entry.rel = this.messageList.innerHTML;
+        this.friends[this.current].history = this.messageList.innerHTML;
         this.current = null;
         this.content.style.left = '-40%';
     };
@@ -101,40 +118,31 @@
                 }
                 break;
             case 'received':
-                if (self.current === msg.people) {
-                    self.addContent('<img src="' + msg.icon + '"><p>' + msg.content + '</p>', 'left');
-                    self.lock(false);
-                }
-                else if (msg.people in self.friends) {
-                    if (self.friends[msg.people].unread === undefined) {
-                        self.friends[msg.people].unread = [msg];
-                    }
-                    else {
-                        self.friends[msg.people].unread.push(msg);
-                    }
-                }
-                else {
-                    self.friends[msg.people] = {
-                        name: msg.name,
-                        icon: msg.icon,
-                        sign: '',
-                        unread: [msg]
-                    };
-
+                delete msg.cmd;
+                self.receive(msg);
+                break;
+            case 'join':
+                delete msg.cmd;
+                if (!self.friends[msg.people]) {
                     var div = document.createElement('div');
                     div.className = 'entry';
                     div.id = msg.people;
-                    div.innerHTML = '<div><h2>' + msg.name + '</h2><p></p></div><img src="' + msg.icon + '" />';
+                    div.innerHTML = '<div><h2>' + msg.name + '</h2><p> ' + msg.sign + ' </p></div><img src="' + msg.icon + '" />';
                     self.friendsList.appendChild(div);
+                    msg.unread = [];
+                    self.friends[msg.people] = msg;
                 }
+
+                self.open({target: document.getElementById(msg.people)});
                 break;
             }
         });
     };
 
     DChat.prototype.send = function (e) {
-        var value = this.messageList.value.trim(), self = this;
-        if (!this.isLock && value !== '') {
+        var value = this.textbox.value.trim(), self = this;
+        e.preventDefault();
+        if (value !== '') {
             if (this.msgRequreToken) {
                 this.port.postMessage({
                     cmd: 'send',
@@ -153,10 +161,43 @@
                 this.port.postMessage({cmd: 'send', content: value, people: self.current});
             }
 
-            e.target.value = '';
-            this.lock(true);
+            this.textbox.value = '';
         }
-        e.preventDefault();
+    };
+
+    DChat.prototype.receive = function (msg) {
+        if (this.current === msg.people) {
+            this.addContent('<img src="' + msg.icon + '"><p>' + msg.content + '</p>', 'left');
+            //self.lock(false);
+        }
+        else if (msg.people in this.friends) {
+            if (this.friends[msg.people].unread.length === 0) {
+                this.friends[msg.people].unread.push(msg);
+                var indicator = document.createElement('span');
+                indicator.appendChild(document.createTextNode(1));
+                document.querySelector('#' + msg.people + ' h2').appendChild(indicator);
+            }
+            else {
+                this.friends[msg.people].unread.push(msg);
+                document.querySelector('#' + msg.people + ' h2 span').appendChild(document.createTextNode(this.friends[msg.people].unread.length));
+            }
+        }
+        else {
+            this.friends[msg.people] = {
+                name: msg.name,
+                icon: msg.icon,
+                sign: '',
+                unread: [msg]
+            };
+
+            var div = document.createElement('div');
+            div.className = 'entry';
+            div.id = msg.people;
+            div.innerHTML = '<div><h2>' + msg.name + '<span>1</span></h2><p></p></div><img src="' + msg.icon + '" />';
+            this.friendsList.appendChild(div);
+            msg.unread = [];
+            this.friends[msg.people] = msg;
+        }
     };
 
     DChat.prototype.addContent = function (html, className) {
@@ -175,7 +216,7 @@
         this.textbox.disabled = status;
         this.textbox.style.backgroundColor = status ? '#ddd' : '#fff';
         this.textbox.value = status ? '双击鼠标来解锁' : '';
-        this.isLock = status;
+        this.friends[this.current].isLock = status;
     };
 
     new DChat();

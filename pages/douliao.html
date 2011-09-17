@@ -21,8 +21,10 @@
             header .entry {margin-bottom: 5px;}
             div.entry {position: relative; overflow: hidden; white-space: nowrap;}
             div.entry div {float: left; max-width: 80%; overflow: hidden;}
-			div.entry img {float: right;}
-			div.entry span {z-index: 2; position: absolute; top: -5px; right: 0; background-color: red; border: 1px solid black; border-radius: 10px; display: inline-block; width: 16px; height: 16px; line-height: 16px; font-size: 9px; text-align: center; color: white; font-weight: bold}
+            div.entry img {float: right;}
+            div.entry h2 {display: inline-block;}
+            div.entry span {z-index: 2; position: absolute; top: 0; right: -20px; background-color: #C43C35; background-image: -webkit-linear-gradient(top, #ee5f5b, #c43c35); border: 1px solid #C43C35; border-radius: 10px;
+                display: inline-block; width: 16px; height: 16px; line-height: 12px; font-size: 9px; text-align: center; color: white; font-weight: bold; -webkit-box-sizing:border-box}
 
             section {}
             section .entry {padding: 5px; border-bottom: 1px solid #BFE7BF;}
@@ -82,9 +84,11 @@
         </div>
     </body>
     <script type="text/javascript">
-        var sections = document.querySelectorAll('section');
-        sections[0].style.height = innerHeight - 60 + 'px';
-        sections[1].style.height = innerHeight - 80 + 'px';
+        window.onload = function () {
+            var sections = document.querySelectorAll('section');
+            sections[0].style.height = innerHeight - 60 + 'px';
+            sections[1].style.height = innerHeight - 80 + 'px';
+        }
     </script>
     <script type="text/javascript" charset="utf-8" src="../src/dchat.js"></script>
 </html>

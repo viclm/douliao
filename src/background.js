@@ -84,14 +84,14 @@ function Mail(args) {
     var self = this;
 
     this.me = {};
-    this.peopleInfo = {};
-    this.peopleNum = 0;
+    this.people = {};
     this.filterRegTest = /:[\r\n]+\|/m;
     this.filterRegFront = /^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
     this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
 
     this.timer = null;
     this.port = null;
+    this.joinInfo = null;
     this.status = 'offline';
     this.sound = document.getElementById('alert');
     this.unread = [];
@@ -122,8 +122,21 @@ function Mail(args) {
 
     chrome.extension.onConnect.addListener(this.proxy(this.portHandler, this));
     chrome.extension.onRequest.addListener(this.proxy(this.requestHandler, this));
+    chrome.tabs.onSelectionChanged.addListener(function(tabId) {
+        if (self.port && self.port.tab.id === tabId) {
+            self.unread = [];
+            chrome.browserAction.setBadgeText({text: ''});
+        }
+    });
     chrome.browserAction.onClicked.addListener(function(tab) {
-        chrome.tabs.create({url: '../pages/douliao.html'});
+        if (self.port === null) {
+            chrome.tabs.create({url: '../pages/douliao.html'});
+        }
+        else {
+            chrome.tabs.update(self.port.tab.id, {selected: true});
+            self.unread = [];
+            chrome.browserAction.setBadgeText({text: ''});
+        }
     });
 }
 
@@ -189,7 +202,7 @@ Mail.prototype.portHandler = function(port) {
                     self.mails = [];
                 }
 
-                clearInterval(self.timer);console.log(config.offline, config)
+                clearInterval(self.timer);
                 if (config.offline) {
                     self.timer = setInterval(self.proxy(self.receive, self), 60000);
                 }
@@ -201,73 +214,38 @@ Mail.prototype.portHandler = function(port) {
 Mail.prototype.requestHandler = function (request, sender, sendResponse) {
     var self = this;
     switch (request.cmd) {
-    case 'createWindow':
-        if (self.peopleInfo[request.people]) {
-            chrome.tabs.update(self.peopleInfo[request.people].port.tab.id, {selected: true});
-            self.setUnread(request.people);
+    case 'join':
+        if (self.port === null) {
+            self.joinInfo = request;
+            chrome.tabs.create({url: '../pages/douliao.html'});
         }
         else {
-            self.popInfo = {
-                people: request.people,
-                name: request.name,
-                icon: request.icon,
-                sign: request.sign,
-                me: self.me
-            };
-
-            chrome.windows.getLastFocused(function (win) {
-                chrome.windows.create({
-                    url: '../pages/pop.html#' + request.people,
-                    width: 400,
-                    height: 430,
-                    left: win.left + Math.floor((win.width - 400) / 2),
-                    top: win.top + Math.floor((win.height - 430) / 2),
-                    type: 'popup'
-                });
-            });
-
-            if (request.updateFriend) {
-                new Resource({
-                    url: 'http://api.douban.com/people/' + request.people,
-                    method: 'get',
-                    data: 'alt=json',
-                    load: function (data) {
-                        data = JSON.parse(data);
-                        var friends = JSON.parse(localStorage.getItem('friends'));
-                        friends[request.people] = {
-                            name: data.title['$t'],
-                            icon: data['link'][2]['@href'],
-                            sign: data['db:signature']['$t']
-                        };
-                        localStorage.setItem('friends', JSON.stringify(friends));
-                    }
-                }).request();
+            self.port.postMessage(request);
+            chrome.tabs.update(self.port.tab.id, {selected: true});
+        }
+        delete request.cmd;
+        var friends = JSON.parse(localStorage.getItem('friends'));
+        friends[request.people] = request;
+        localStorage.setItem('friends', JSON.stringify(friends));
+        break;
+    /*    case 'setUnread':
+        var i = 0;
+        while (i < self.unread.length) {
+            if (self.unread[i].people === request.people) {
+                self.unread.splice(i, 1);
+            }
+            else {
+                i += 1;
             }
         }
-        break;
-    case 'getPeopleInfo':
-        var i = 0, res, history = [], mails = [];
-        res = self.setUnread(request.people);
-        for (; i < res.length ; i += 1) {
-            history.push({name: res[i].name, content: res[i].content});
-            mails.push(res[i].mailId);
-        }
-        self.popInfo.history = history;
-        self.popInfo.mails = mails;
-        if (self.popInfo.name === undefined) {
-            self.popInfo.name = res[0].name;
-            self.popInfo.icon = res[0].icon;
-            self.popInfo.sign = res[0].sign;
-        }
-        sendResponse(self.popInfo);
-        self.popInfo = null;
-        break;
-    case 'getUnread':
-        sendResponse({unread: self.unread});
-        break;
+        chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+        break;*/
     case 'initial':
         self.receive();
-        sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends')), unread: self.unread});
+        sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends')), current: self.joinInfo, unread: self.unread});
+        self.joinInfo = null;
+        self.unread = [];
+        chrome.browserAction.setBadgeText({text: ''});
         break;
     case 'deleteFriend':
         var friends = JSON.parse(localStorage.getItem('friends'));
@@ -364,7 +342,6 @@ Mail.prototype.receive = function () {
                         response.name = data.author.name['$t'];
                         response.icon = data.author.link[2] && data.author.link[2]['@href'];
                         response.timestamp = data.published['$t'];
-
                         str1 = data.content['$t'].trim();
                         if (self.filterRegTest.test(str1)) {
                             str2 = self.filterRegFront.exec(str1)[1];
@@ -379,16 +356,15 @@ Mail.prototype.receive = function () {
                             str2 = str1;
                         }
                         response.content = str2;console.log(str1, '-------------------------------------------', str2)
+
                         if (self.port) {
                             self.port.postMessage(response);
                         }
-                        else {
-                            self.unread.push(response);
-                        }
 
+                        self.unread.push(response);
                         self.mails.push(data.id['$t']);
                         JSON.parse(localStorage.config).history && self.save(response.people, 'ta', str2);
-                        self.notify();
+                        self.notify(response.name + '说: ', response.content);
                     }
                 }).request();
             }
@@ -396,10 +372,8 @@ Mail.prototype.receive = function () {
     }).request();
 };
 
-Mail.prototype.notify = function (people, info) {
-    var config = JSON.parse(localStorage.config), notification;
-
-    chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+Mail.prototype.notify = function (name, content) {
+    var config = JSON.parse(localStorage.config), notification, self = this;
 
     if (config.soundRemind) {
         this.sound.play();
@@ -410,7 +384,8 @@ Mail.prototype.notify = function (people, info) {
             if (win.focused) {
                 chrome.tabs.getSelected(win.id, function (tab) {
                     if (self.port === null || self.port.tab.id !== tab.id) {
-                        notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
+                        chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+                        notification = webkitNotifications.createNotification('../assets/icon16.png', name, content);
                         notification.show();
                         setTimeout(function () {
                             notification.cancel();
@@ -419,7 +394,8 @@ Mail.prototype.notify = function (people, info) {
                 });
             }
             else {
-                notification = webkitNotifications.createNotification('../assets/icon16.png', info.name + '说', info.content);
+                chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+                notification = webkitNotifications.createNotification('../assets/icon16.png', name, content);
                 notification.show();
                 setTimeout(function () {
                     notification.cancel();

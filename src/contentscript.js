@@ -11,7 +11,7 @@
         button.addEventListener('click', function (e) {
             e.preventDefault();
             chrome.extension.sendRequest({
-                cmd: 'createWindow',
+                cmd: 'join',
                 people: location.href.match(/\/([^\/]+)\/?$/)[1],
                 name: document.title.trim(),
                 icon: document.querySelector('#db-usr-profile img').src,
