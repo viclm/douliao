@@ -4,6 +4,30 @@ localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) &
 
 localStorage.friends || localStorage.setItem('friends', '{}');
 
+var database, dbRequest = webkitIndexedDB.open('dchat');
+
+dbRequest.onerror = function(e) {
+    var config = JSON.parse(localStorage.config);
+    config.history = false;
+    localStorage.config = JSON.stringify(config);
+    chrome.extension.sendRequest({cmd: 'disableConfig', config: 'deleteMails'});
+};
+
+dbRequest.onsuccess = function(e) {
+    database = e.target.result;
+    if (database.version != '1.0') {
+        var request = database.setVersion("1.0");
+
+        request.onerror = function (event) {
+            console.log('setVersion error');
+        };
+
+        request.onsuccess = function (e) {
+            database.createObjectStore('history', {keyPath: 'timestamp'});
+        };
+    }
+};
+
 function Resource(args) {
     this.method = args.method || 'get';
     this.url = args.url || '';
@@ -128,6 +152,17 @@ function Mail(args) {
             chrome.browserAction.setBadgeText({text: ''});
         }
     });
+    chrome.windows.onFocusChanged.addListener(function(winId) {
+        if (winId === -1) {
+            return;
+        }
+        chrome.tabs.getSelected(winId, function (tab) {
+            if (self.port && self.port.tab.id === tab.id) {
+                self.unread = [];
+                chrome.browserAction.setBadgeText({text: ''});
+            }
+        });
+    });
     chrome.browserAction.onClicked.addListener(function(tab) {
         if (self.port === null) {
             chrome.tabs.create({url: '../pages/douliao.html'});
@@ -161,7 +196,7 @@ Mail.prototype.portHandler = function(port) {
                     msg,
                     function (data, e) {
                         port.postMessage({cmd: 'sended', result: true});
-                        JSON.parse(localStorage.config).history && self.save(msg.people, 'me', msg.content);
+                        JSON.parse(localStorage.config).history && self.save(msg.people, 'me', msg.content, Date());
                     },
                     function (e) {console.log(e, e.status)
                         if (e.status === 403) {
@@ -180,14 +215,33 @@ Mail.prototype.portHandler = function(port) {
                         }
                     });
                 break;
-            case 'addFriend':
+            case 'addFriend':console.log(msg.url)
+                new Resource({
+                    url: msg.url.replace('www', 'api').slice(0, -1),
+                    method: 'get',
+                    data: 'alt=json',
+                    load: function (data) {
+                        var friends = JSON.parse(localStorage.getItem('friends')), person;
+                        data = JSON.parse(data);
+                        person = {
+                            id: data['db:uid']['$t'],
+                            name: data.title['$t'],
+                            icon: data['link'][2]['@href'],
+                            sign: data['db:signature']['$t']
+                        };
+                        if (friends[person.id] === undefined) {
+                            friends[person.id] = person;
+                            localStorage.setItem('friends', JSON.stringify(friends));
+                            person.cmd = 'join';
+                            port.postMessage(person);
+                        }
+                    }
+                }).request();
+                break;
+            case 'deleteFriend':
                 var friends = JSON.parse(localStorage.getItem('friends'));
-                if (friends[msg.people] === undefined) {
-                    friends[msg.people] = msg;
-                    delete msg.cmd;
-                    delete msg.people;
-                    localStorage.setItem('friends', JSON.stringify(friends));
-                }
+                delete friends[msg.people];
+                localStorage.setItem('friends', JSON.stringify(friends));
                 break;
             }
         });
@@ -195,7 +249,7 @@ Mail.prototype.portHandler = function(port) {
         port.onDisconnect.addListener(function (port) {
             if (port.name === 'dchat') {
                 self.port = null;
-                var config = JSON.parse(localStorage.config);
+                var config = JSON.parse(localStorage.config);console.log(self.mails, config.deleteMails)
 
                 if (config.deleteMails) {
                     self.delete(self.mails);
@@ -246,11 +300,6 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         self.joinInfo = null;
         self.unread = [];
         chrome.browserAction.setBadgeText({text: ''});
-        break;
-    case 'deleteFriend':
-        var friends = JSON.parse(localStorage.getItem('friends'));
-        delete friends[request.people];
-        localStorage.setItem('friends', JSON.stringify(friends));
         break;
     case 'getCaptcha':
         sendResponse({url: self.history[request.people].captcha.string});
@@ -361,10 +410,9 @@ Mail.prototype.receive = function () {
                             self.port.postMessage(response);
                         }
 
-                        self.unread.push(response);
                         self.mails.push(data.id['$t']);
-                        JSON.parse(localStorage.config).history && self.save(response.people, 'ta', str2);
-                        self.notify(response.name + '说: ', response.content);
+                        JSON.parse(localStorage.config).history && self.save(response.people, 'ta', str2, response.timestamp);
+                        self.notify(response.name + '说: ', response.content, response);
                     }
                 }).request();
             }
@@ -372,7 +420,7 @@ Mail.prototype.receive = function () {
     }).request();
 };
 
-Mail.prototype.notify = function (name, content) {
+Mail.prototype.notify = function (name, content, response) {
     var config = JSON.parse(localStorage.config), notification, self = this;
 
     if (config.soundRemind) {
@@ -384,7 +432,8 @@ Mail.prototype.notify = function (name, content) {
             if (win.focused) {
                 chrome.tabs.getSelected(win.id, function (tab) {
                     if (self.port === null || self.port.tab.id !== tab.id) {
-                        chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+                        self.unread.push(response);
+                        chrome.browserAction.setBadgeText({text: self.unread.length > 0 ? self.unread.length.toString() : ''});
                         notification = webkitNotifications.createNotification('../assets/icon16.png', name, content);
                         notification.show();
                         setTimeout(function () {
@@ -394,7 +443,8 @@ Mail.prototype.notify = function (name, content) {
                 });
             }
             else {
-                chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
+                self.unread.push(response);
+                chrome.browserAction.setBadgeText({text: self.unread.length > 0 ? self.unread.length.toString() : ''});
                 notification = webkitNotifications.createNotification('../assets/icon16.png', name, content);
                 notification.show();
                 setTimeout(function () {
@@ -405,8 +455,27 @@ Mail.prototype.notify = function (name, content) {
     }
 }
 
-Mail.prototype.save = function (people, from, content) {
+Mail.prototype.query = function (people, num) {
+    var objectStore = database.transaction(['history'], webkitIDBTransaction.READ).objectStore('history'), request, keyRange;
+    keyRange = webkitIDBKeyRange.only(people);
+    request = objectStore.index('people').openCursor(keyRange, webkitIDBCursor.PREV);
+    request.addEventListener('success', this.proxy(function (e) {
+        var cursor = event.target.result;
+        if (cursor) {
+            cursor.continue();
+        }
+    }, this), false);
+    request.addEventListener('error', function (e) {console.log(e)}, false);
+};
 
+Mail.prototype.save = function (people, from, content, timestamp) {
+    var objectStore = database.transaction(['history'], webkitIDBTransaction.WRITE).objectStore('history'), request;
+    request = objectStore.add({
+        people: people,
+        from: from,
+        content: content,
+        timestamp: timestamp
+    });
 };
 
 

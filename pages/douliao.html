@@ -2,39 +2,39 @@
 <html lang="zh-CN">
     <head>
         <meta charset="UTF-8">
-        <title>豆聊</title>
+        <title>豆聊 - 豆瓣即时聊天工具</title>
         <style type="text/css">
-            body {margin: 0; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif; display: -webkit-box; -webkit-box-orient: horizontal; color: #333333;}
+            * {margin: 0; margin: 0;}
+            body {margin: 0; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif; display: -webkit-box; -webkit-box-orient: horizontal; color: #333333; background: #E9F4E9 url('../assets/icon128.png') no-repeat -20px -20px;}
             img {width: 32px; height: 32px; border-radius: 5px;}
-            h1, h2 {font-size: 12px; margin: 0; margin: 0; line-height: 18px; position: relative;}
-            h1 {font-size: 16px; text-align: center; line-height: 30px;}
+            h1 {font-size: 16px; line-height: 30px; text-align: center; color: white;}
+            h2 {font-size: 12px; line-height: 18px; position: relative;}
             p {margin: 0; color: grey;}
-            input[type=button], input[type=submit] {background-color: #E6E6E6; background-image: -webkit-linear-gradient(#ffffff, #ffffff 25%, #e6e6e6); background-repeat: no-repeat; border: 1px solid #CCC; border-radius: 4px; 
-                cursor: pointer; -webkit-transition: 0.1s linear all; padding: 2px 14px; margin: 4px 0 2px;}
-
+            input[type=button], input[type=submit] {background-color: #E6E6E6; background-image: -webkit-linear-gradient(#ffffff, #ffffff 25%, #e6e6e6); background-repeat: no-repeat; border: 1px solid #CCC; border-radius: 0; 
+                cursor: pointer; -webkit-transition: 0.1s linear all; padding: 2px 5px;}
             input[type=button]:hover, input[type=submit]:hover {background-position: 0 -15px;}
+            input[type=text] {width: 90%; -webkit-transition: border linear 0.2s, box-shadow linear 0.2s; outline:none; height: 28px; margin: 0;
+                -webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #CCC; -webkit-box-sizing:border-box; border-radius: 0; padding: 5px;}
+            input[type=text]:focus {border-color: rgba(82, 168, 236, 0.8); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset, 0 0 8px rgba(82, 168, 236, 0.6);}
 
-            #sidebar {z-index: 2; min-width: 250px; width: 30%; height: 100%; position: absolute; background: -webkit-linear-gradient(rgba(234, 238, 243, 0.2), #E9F4E9), -webkit-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB)}
-            #content {width: 70%; height: 100%; position: absolute; left: -40%; -webkit-transition: left linear 0.2s;}
+            #sidebar {z-index: 2; min-width: 250px; width: 30%; height: 100%; position: absolute; background-color: #E9F4E9}
+            #content {width: 70%; height: 100%; position: absolute; left: -40%; -webkit-transition: left linear 0.2s; background-color: white}
 
-            header {background: -webkit-linear-gradient(top, #D1EED1,#62c462); height: 30px;}
-            header .entry {margin-bottom: 5px;}
-            div.entry {position: relative; overflow: hidden; white-space: nowrap;}
-            div.entry div {float: left; max-width: 80%; overflow: hidden;}
-            div.entry img {float: right;}
-            div.entry h2 {display: inline-block;}
-            div.entry span {z-index: 2; position: absolute; top: 0; right: -20px; background-color: #C43C35; background-image: -webkit-linear-gradient(top, #ee5f5b, #c43c35); border: 1px solid #C43C35; border-radius: 10px;
+            header, footer {background-color: #0C7823; height: 30px;}
+
+            .entry {position: relative; overflow: hidden; white-space: nowrap; padding: 5px; border-bottom: 1px solid #BFE7BF;}
+            .entry:hover {background: #EBF8F9}
+            .entry.active {background: white}
+            .entry input {float: left; margin: 5px 5px 0 0; display: none;
+                background-color: #C43C35; background-image: -webkit-linear-gradient(top, #ee5f5b, #c43c35); border-color: #C43C35 #C43C35 #882A25; color: white}
+            .entry div {float: left; max-width: 80%; overflow: hidden;}
+            .entry img {float: right;}
+            .entry h2 {display: inline-block;}
+            .entry span {z-index: 2; position: absolute; top: 0; right: -20px; background-color: #C43C35; background-image: -webkit-linear-gradient(top, #ee5f5b, #c43c35); border: 1px solid #C43C35; border-radius: 10px;
                 display: inline-block; width: 16px; height: 16px; line-height: 12px; font-size: 9px; text-align: center; color: white; font-weight: bold; -webkit-box-sizing:border-box}
 
-            section {}
-            section .entry {padding: 5px; border-bottom: 1px solid #BFE7BF;}
-            section .entry:hover {background: #EBF8F9}
-            section .entry.active {background: white}
-
-            footer {background: -webkit-linear-gradient(top, #D1EED1,#62c462); height: 30px;}
-
-            #content header input {position: absolute; right: 10px;}
-
+            #sidebar footer input {margin-left: 10px; border-top: none;}
+            
             #content section {overflow: auto; padding: 10px;}
             #content section div {position: relative; overflow: hidden; margin-bottom: 2px;}
             #content section div.left * {float: left}
@@ -47,13 +47,17 @@
             #content section div.right p {background: -webkit-linear-gradient(top, #fceec1, #eedc94); color: #404040;}
             #content section div.captcha img{width: 213px; height: 34px;}
 
-            #content footer {background: none; padding: 0 5%}
-            footer input[type=text] {width: 90%; -webkit-transition: border linear 0.2s, box-shadow linear 0.2s; outline:none; height: 28px; margin: 0;
-                -webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #CCC; -webkit-box-sizing:border-box; border-radius: 3px; padding: 5px;}
-            footer input[type=text]:focus {border-color: rgba(82, 168, 236, 0.8); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset, 0 0 8px rgba(82, 168, 236, 0.6);}
-            footer input[type=submit] {width: 8%; -webkit-box-sizing:border-box; margin: 0; margin-left: 1%;height: 28px;
+            #content footer {background: none; padding: 0 5%; height: 50px;}
+            #content footer input[type=submit], aside input[type=submit] {width: 8%; -webkit-box-sizing:border-box; margin: 0; margin-left: 1%; height: 28px;
                 background-color: #57A957; background-image: -webkit-linear-gradient(top, #62c462, #57a957); border-color: #57A957 #57A957 #3D773D; color: white}
 
+            aside {z-index: 10; position: fixed; right: 0; width: 500px; text-align: center; -webkit-box-shadow: 0 0 10px #888; background-color: white; display: none;}
+            aside h1 {background-color: #0C7823;}
+            aside span {position: absolute; right: 20px; cursor: pointer}
+            aside div {border: 1px solid #bfbfbf; border-top: none; padding: 20px;}
+            aside input[type=text] {width: 100%; display: block; margin-bottom: 20px;}
+            aside input[type=submit] {width: 15%; margin-left: 0;}
+            aside p {color: red; margin: -10px 0 10px 0; display: none;}
         </style>
     </head>
     <body>
@@ -64,13 +68,16 @@
             <section>
             </section>
             <footer>
-
+                <input type="button" value="编辑" />
+                <input type="button" value="添加好友" />
             </footer>
         </div>
         <div id="content">
+            <!--
             <header>
                 <input type="button" value="关闭" />
             </header>
+            -->
             <section>
                 <div class="left"><img src="http://img3.douban.com/icon/u33708235-7.jpg"><p>我脑袋疼了都。。。</p></div>
                 <div class="right"><img src="http://img3.douban.com/icon/u35890859-24.jpg"><p>表</p></div>
@@ -82,13 +89,26 @@
                 </form>
             </footer>
         </div>
+        <aside>
+            <h1>请输入豆友主页网址来添加好友<span>X</span></h1>
+            <div>
+            <form action="">
+                <input type="text" placeholder="网址参考格式: http://www.douban.com/people/viclm/"/>
+                <p>网址格式错误</p>
+                <input type="submit" value="添加好友">
+            </form>
+            </div>
+        </aside>
     </body>
     <script type="text/javascript">
-        window.onload = function () {
-            var sections = document.querySelectorAll('section');
+        document.addEventListener('DOMContentLoaded', function () {
+            var sections = document.querySelectorAll('section'), aside = document.querySelector('aside');
             sections[0].style.height = innerHeight - 60 + 'px';
-            sections[1].style.height = innerHeight - 80 + 'px';
-        }
+            sections[1].style.height = innerHeight - 70 + 'px';
+            aside.style.left = (innerWidth - 500) / 2 + 'px';
+            aside.style.top = (innerHeight - 147) / 2 + 'px';
+            document.body.style['background-position'] = (innerWidth*0.7 - 128)/2 + innerWidth*0.3 + 'px ' + (innerHeight - 128)/2 + 'px';
+        }, false);
     </script>
     <script type="text/javascript" charset="utf-8" src="../src/dchat.js"></script>
 </html>
