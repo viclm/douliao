@@ -101,14 +101,14 @@
         </aside>
     </body>
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
             var sections = document.querySelectorAll('section'), aside = document.querySelector('aside');
             sections[0].style.height = innerHeight - 60 + 'px';
             sections[1].style.height = innerHeight - 70 + 'px';
             aside.style.left = (innerWidth - 500) / 2 + 'px';
             aside.style.top = (innerHeight - 147) / 2 + 'px';
             document.body.style['background-position'] = (innerWidth*0.7 - 128)/2 + innerWidth*0.3 + 'px ' + (innerHeight - 128)/2 + 'px';
-        }, false);
+        }, 200);
     </script>
     <script type="text/javascript" charset="utf-8" src="../src/dchat.js"></script>
 </html>

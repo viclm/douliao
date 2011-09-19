@@ -28,7 +28,7 @@
         }, this), false);
         this.modal.querySelector('form').addEventListener('submit', this.proxy(this.add, this), false);
         this.content.addEventListener( 'webkitTransitionEnd', function (e) {
-            this.style.left = '30%';
+            if (self.current) {this.style.left = '30%';}
         }, false )
 
         var self = this;
@@ -53,7 +53,7 @@
                 self.open({target: document.getElementById(response.current.people)});
             }
 
-            key = 0;
+            key = 0;console.log(document.getElementById(response.unread))
             while (key < response.unread.length) {
                 delete response.unread[key].cmd;
                 self.receive(response.unread[key]);
@@ -138,14 +138,14 @@
         if (e.target.value === '编辑') {
             for (i = 0, len = input.length ; i < len ; i += 1) {
                 input[i].style.display = 'block';
-                e.target.value = '完成'
             }
+            e.target.value = '完成'
         }
         else {
             for (i = 0, len = input.length ; i < len ; i += 1) {
                 input[i].style.display = 'none';
-                e.target.value = '编辑'
             }
+            e.target.value = '编辑'
         }
     };
 
@@ -236,7 +236,7 @@
         }
     };
 
-    DChat.prototype.receive = function (msg) {
+    DChat.prototype.receive = function (msg) {console.log(msg, this.friends)
         if (this.current === msg.people) {
             this.addContent('<img src="' + msg.icon + '"><p>' + msg.content + '</p>', 'left');
             //self.lock(false);
@@ -245,7 +245,7 @@
             if (this.friends[msg.people].unread.length === 0) {
                 this.friends[msg.people].unread.push(msg);
                 var indicator = document.createElement('span');
-                indicator.appendChild(document.createTextNode(1));
+                indicator.innerHTML = '1';
                 document.getElementById(msg.people).querySelector('h2').appendChild(indicator);
             }
             else {
@@ -266,8 +266,8 @@
             div.id = msg.people;
             div.innerHTML = '<input type="button" value="删除" /><div><h2>' + msg.name + '<span>1</span></h2><p></p></div><img src="' + msg.icon + '" />';
             this.friendsList.appendChild(div);
-            msg.unread = [];
-            this.friends[msg.people] = msg;
+            //msg.unread = [];
+            //this.friends[msg.people] = msg;
         }
     };
 

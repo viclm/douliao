@@ -2,7 +2,10 @@
 localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) && (JSON.parse(localStorage.config).history !== undefined) && (JSON.parse(localStorage.config).deleteMails !== undefined)
 || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true, history: true, deleteMails: false}));
 
-localStorage.friends || localStorage.setItem('friends', '{}');
+if (!localStorage.friends) {
+    localStorage.setItem('friends', '{}');
+    chrome.tabs.create({url: '../pages/demo.html'});
+}
 
 var database, dbRequest = webkitIndexedDB.open('dchat');
 
@@ -109,6 +112,7 @@ function Mail(args) {
 
     this.me = {};
     this.people = {};
+    this.friends = JSON.parse(localStorage.friends);
     this.filterRegTest = /:[\r\n]+\|/m;
     this.filterRegFront = /^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
     this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
@@ -188,6 +192,7 @@ Mail.prototype.portHandler = function(port) {
         self.timer && clearInterval(self.timer);
         self.receive();
         self.timer = setInterval(self.proxy(self.receive, self), 10000);
+        self.updateFriends();
 
         port.onMessage.addListener(function(msg) {
             switch (msg.cmd) {
@@ -221,7 +226,7 @@ Mail.prototype.portHandler = function(port) {
                     method: 'get',
                     data: 'alt=json',
                     load: function (data) {
-                        var friends = JSON.parse(localStorage.getItem('friends')), person;
+                        var person;
                         data = JSON.parse(data);
                         person = {
                             id: data['db:uid']['$t'],
@@ -229,9 +234,9 @@ Mail.prototype.portHandler = function(port) {
                             icon: data['link'][2]['@href'],
                             sign: data['db:signature']['$t']
                         };
-                        if (friends[person.id] === undefined) {
-                            friends[person.id] = person;
-                            localStorage.setItem('friends', JSON.stringify(friends));
+                        if (self.friends[person.id] === undefined) {
+                            self.friends[person.id] = person;
+                            localStorage.friends = JSON.stringify(self.friends);
                             person.cmd = 'join';
                             port.postMessage(person);
                         }
@@ -239,9 +244,8 @@ Mail.prototype.portHandler = function(port) {
                 }).request();
                 break;
             case 'deleteFriend':
-                var friends = JSON.parse(localStorage.getItem('friends'));
-                delete friends[msg.people];
-                localStorage.setItem('friends', JSON.stringify(friends));
+                delete self.friends[msg.people];console.log(self.friends, msg.people)
+                localStorage.friends = JSON.stringify(self.friends);
                 break;
             }
         });
@@ -257,6 +261,7 @@ Mail.prototype.portHandler = function(port) {
                 }
 
                 clearInterval(self.timer);
+                self.timer = null;
                 if (config.offline) {
                     self.timer = setInterval(self.proxy(self.receive, self), 60000);
                 }
@@ -278,9 +283,8 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
             chrome.tabs.update(self.port.tab.id, {selected: true});
         }
         delete request.cmd;
-        var friends = JSON.parse(localStorage.getItem('friends'));
-        friends[request.people] = request;
-        localStorage.setItem('friends', JSON.stringify(friends));
+        self.friends[request.people] = request;
+        localStorage.friends = JSON.stringify(self.friends);
         break;
     /*    case 'setUnread':
         var i = 0;
@@ -294,9 +298,9 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         }
         chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
         break;*/
-    case 'initial':
+    case 'initial':console.log(self.friends)
         self.receive();
-        sendResponse({me: self.me, friends: JSON.parse(localStorage.getItem('friends')), current: self.joinInfo, unread: self.unread});
+        sendResponse({me: self.me, friends: self.friends, current: self.joinInfo, unread: self.unread});
         self.joinInfo = null;
         self.unread = [];
         chrome.browserAction.setBadgeText({text: ''});
@@ -327,6 +331,34 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         break;
     }
 };
+
+Mail.prototype.updateFriends = function () {
+    var key, counter = 1, self = this;
+    for (key in self.friends) {
+        (function () {
+            var people = key;
+            setTimeout(function () {
+                new Resource({
+                    url: 'http://api.douban.com/people/' + people,
+                    method: 'get',
+                    data: 'alt=json',
+                    load: function (data) {
+                        data = JSON.parse(data);
+                        self.friends[data['db:uid']['$t']] = {
+                            id: data['db:uid']['$t'],
+                            name: data.title['$t'],
+                            icon: data['link'][2]['@href'],
+                            sign: data['db:signature']['$t']
+                        };
+                        localStorage.friends = JSON.stringify(self.friends);
+                    }
+                }).request();
+            }, 50000 * counter);
+        })();
+        counter += 1;
+    }
+};
+
 
 Mail.prototype.send = function (msg, load, error) {
     var entry = '<?xml version="1.0" encoding="UTF-8"?>'
@@ -469,7 +501,7 @@ Mail.prototype.query = function (people, num) {
 };
 
 Mail.prototype.save = function (people, from, content, timestamp) {
-    var objectStore = database.transaction(['history'], webkitIDBTransaction.WRITE).objectStore('history'), request;
+    var objectStore = database.transaction(['history'], webkitIDBTransaction.READ_WRITE).objectStore('history'), request;
     request = objectStore.add({
         people: people,
         from: from,
