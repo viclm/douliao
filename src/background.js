@@ -6,7 +6,6 @@ if (!localStorage.friends) {
     localStorage.setItem('friends', '{}');
     chrome.tabs.create({url: '../pages/demo.html'});
 }
-
 var database, dbRequest = webkitIndexedDB.open('dchat');
 
 dbRequest.onerror = function(e) {
