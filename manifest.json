@@ -1,7 +1,7 @@
 {
     "name": "豆聊",
-    "version": "2.0",
-    "description": "用QQ的方式聊豆邮",
+    "version": "2.0.2",
+    "description": "豆瓣即时聊天工具",
     "icons": {
         "16": "assets/icon16.png",
         "48": "assets/icon48.png",

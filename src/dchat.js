@@ -96,6 +96,55 @@
         }
     };
 
+    DChat.prototype.start = function () {
+        var self = this;
+        this.port = chrome.extension.connect({name: 'dchat'});
+        this.port.onMessage.addListener(function (msg) {
+            switch (msg.cmd) {
+            case 'sended':
+                if (!msg.result) {
+                    var captcha = self.addContent('<p>发送太快了亲，输入验证码</p><img src="' + msg.msg.captcha.string + '">', 'captcha');
+                    self.msgRequreToken = msg.msg;
+                    self.msgRequreToken.captcha.dom = captcha;
+                    self.lock(false);
+                }
+                break;
+            case 'received':
+                delete msg.cmd;
+                self.receive(msg);
+                break;
+            case 'join':
+                delete msg.cmd;
+                if (!self.friends[msg.people]) {
+                    var div = document.createElement('div');
+                    div.className = 'entry';
+                    div.id = msg.people;
+                    div.innerHTML = '<input type="button" value="删除" /><div><h2>' + msg.name + '</h2><p> ' + msg.sign + ' </p></div><img src="' + msg.icon + '" />';
+                    self.friendsList.appendChild(div);
+                    msg.unread = [];
+                    self.friends[msg.people] = msg;
+                }
+
+                self.open({target: document.getElementById(msg.people)});
+                break;
+            case 'mergeHistory':console.log(msg)
+                if (msg.people === self.current) {
+                    for (var i = 0, len = msg.history.length, item ; i < len ; i += 1) {
+                        item = msg.history[i];
+                        if (item.from === 'ta') {
+                            self.addContent('<img src="' + self.friends[msg.people].icon + '"><p>' + item.content + '</p>', 'left old');
+                        }
+                        else {
+                            self.addContent('<img src="' + self.me.icon + '"><p>' + item.content + '</p>', 'right old');
+                        }
+                    }
+                    self.friends[msg.people].gina = true;
+                }
+                break;
+            }
+        });
+    };
+
     DChat.prototype.open = function (e) {
         var target = e.target, id = target.id, i, len, self = this;
         if (this.current !== id) {console.log(this.current, id)
@@ -122,6 +171,9 @@
             }
             target.className = 'entry active';
             this.current = id;
+            if (this.friends[id].gina === undefined) {
+                this.port.postMessage({cmd: 'fetchHistory', people: id});
+            }
         }
     };
 
@@ -157,6 +209,7 @@
             this.port.postMessage({cmd: 'addFriend', url: url[0]});
             this.modal.querySelector('p').style.display = 'none';
             this.modal.style.display = 'none';
+            this.modal.querySelector('input').value = '';
         }
         else {
             this.modal.querySelector('p').style.display = 'block';
@@ -173,41 +226,6 @@
         this.port.postMessage({cmd: 'deleteFriend', people: entry.id});
         this.friendsList.removeChild(entry);
         e.stopPropagation();
-    };
-
-    DChat.prototype.start = function () {
-        var self = this;
-        this.port = chrome.extension.connect({name: 'dchat'});
-        this.port.onMessage.addListener(function (msg) {
-            switch (msg.cmd) {
-            case 'sended':
-                if (!msg.result) {
-                    var captcha = self.addContent('<p>发送太快了亲，输入验证码</p><img src="' + msg.msg.captcha.string + '">', 'captcha');
-                    self.msgRequreToken = msg.msg;
-                    self.msgRequreToken.captcha.dom = captcha;
-                    self.lock(false);
-                }
-                break;
-            case 'received':
-                delete msg.cmd;
-                self.receive(msg);
-                break;
-            case 'join':
-                delete msg.cmd;
-                if (!self.friends[msg.people]) {
-                    var div = document.createElement('div');
-                    div.className = 'entry';
-                    div.id = msg.people;
-                    div.innerHTML = '<input type="button" value="删除" /><div><h2>' + msg.name + '</h2><p> ' + msg.sign + ' </p></div><img src="' + msg.icon + '" />';
-                    self.friendsList.appendChild(div);
-                    msg.unread = [];
-                    self.friends[msg.people] = msg;
-                }
-
-                self.open({target: document.getElementById(msg.people)});
-                break;
-            }
-        });
     };
 
     DChat.prototype.send = function (e) {
@@ -264,11 +282,10 @@
             var div = document.createElement('div');
             div.className = 'entry';
             div.id = msg.people;
-            div.innerHTML = '<input type="button" value="删除" /><div><h2>' + msg.name + '<span>1</span></h2><p></p></div><img src="' + msg.icon + '" />';
             this.friendsList.appendChild(div);
-            //msg.unread = [];
-            //this.friends[msg.people] = msg;
+            div.innerHTML = '<input type="button" value="删除" /><div><h2>' + msg.name + '<span>1</span></h2><p></p></div><img src="' + msg.icon + '" />';
         }
+        this.friendsList.insertBefore(document.getElementById(msg.people), this.friendsList.querySelector('div'));
     };
 
     DChat.prototype.addContent = function (html, className) {

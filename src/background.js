@@ -17,15 +17,21 @@ dbRequest.onerror = function(e) {
 
 dbRequest.onsuccess = function(e) {
     database = e.target.result;
-    if (database.version != '1.0') {
-        var request = database.setVersion("1.0");
+    if (database.version != '1.1') {
+        var request = database.setVersion("1.1");
 
-        request.onerror = function (event) {
+        request.onerror = function (e) {
             console.log('setVersion error');
         };
 
         request.onsuccess = function (e) {
-            database.createObjectStore('history', {keyPath: 'timestamp'});
+            var objectStore;
+            try {
+                database.deleteObjectStore('history');
+            }
+            catch (e) {console.log(e)}
+            objectStore = database.createObjectStore('history', {keyPath: 'timestamp'});
+            objectStore.createIndex('people', 'people', {unique: false});
         };
     }
 };
@@ -228,13 +234,13 @@ Mail.prototype.portHandler = function(port) {
                         var person;
                         data = JSON.parse(data);
                         person = {
-                            id: data['db:uid']['$t'],
+                            people: data['db:uid']['$t'],
                             name: data.title['$t'],
                             icon: data['link'][2]['@href'],
                             sign: data['db:signature']['$t']
                         };
-                        if (self.friends[person.id] === undefined) {
-                            self.friends[person.id] = person;
+                        if (self.friends[person.people] === undefined) {
+                            self.friends[person.people] = person;
                             localStorage.friends = JSON.stringify(self.friends);
                             person.cmd = 'join';
                             port.postMessage(person);
@@ -245,6 +251,11 @@ Mail.prototype.portHandler = function(port) {
             case 'deleteFriend':
                 delete self.friends[msg.people];console.log(self.friends, msg.people)
                 localStorage.friends = JSON.stringify(self.friends);
+                break;
+            case 'fetchHistory':
+                if (JSON.parse(localStorage.config).history) {
+                    self.query(msg.people);
+                }
                 break;
             }
         });
@@ -486,14 +497,26 @@ Mail.prototype.notify = function (name, content, response) {
     }
 }
 
-Mail.prototype.query = function (people, num) {
-    var objectStore = database.transaction(['history'], webkitIDBTransaction.READ).objectStore('history'), request, keyRange;
+Mail.prototype.query = function (people, time, num) {
+    time = time || 0;
+    num = num || 5;
+    var objectStore = database.transaction(['history'], webkitIDBTransaction.READ_ONLY).objectStore('history'), request, keyRange, self = this, history = [];
     keyRange = webkitIDBKeyRange.only(people);
-    request = objectStore.index('people').openCursor(keyRange, webkitIDBCursor.PREV);
+    request = objectStore.index('people').openCursor(keyRange, webkitIDBCursor.PREV);//
     request.addEventListener('success', this.proxy(function (e) {
         var cursor = event.target.result;
-        if (cursor) {
-            cursor.continue();
+        if (cursor) {console.log(cursor.value)
+            history.push(cursor.value);
+            if (history.length >= num) {
+                self.port.postMessage({cmd: 'mergeHistory', people: people, history: history});
+            }
+            else {
+                cursor.continue();
+            }
+        }
+        else {
+            console.log(history)
+            self.port.postMessage({cmd: 'mergeHistory', people: people, history: history});
         }
     }, this), false);
     request.addEventListener('error', function (e) {console.log(e)}, false);
