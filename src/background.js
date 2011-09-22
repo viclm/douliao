@@ -6,6 +6,7 @@ if (!localStorage.friends) {
     localStorage.setItem('friends', '{}');
     chrome.tabs.create({url: '../pages/demo.html'});
 }
+/*
 var database, dbRequest = webkitIndexedDB.open('dchat');
 
 dbRequest.onerror = function(e) {
@@ -35,6 +36,12 @@ dbRequest.onsuccess = function(e) {
         };
     }
 };
+*/
+var database = openDatabase('dchat', '1.0', 'dchat database', 4 * 1024 * 1024);
+database.transaction(function (tx) {
+  tx.executeSql('CREATE TABLE IF NOT EXISTS history (people text, f text, content text, timestamp date)');
+});
+
 
 function Resource(args) {
     this.method = args.method || 'get';
@@ -254,7 +261,7 @@ Mail.prototype.portHandler = function(port) {
                 break;
             case 'fetchHistory':
                 if (JSON.parse(localStorage.config).history) {
-                    self.query(msg.people);
+                    self.query(msg.people, null, null, msg.offset);
                 }
                 break;
             }
@@ -419,7 +426,7 @@ Mail.prototype.receive = function () {
         data: 'start-index=1&alt=json',
         load: function (data, e) {
             var i, len, key, people, mails = [];
-            data = JSON.parse(data).entry;
+            data = JSON.parse(data).entry;console.log(data.length)
             for (i = 0, len = data.length ; i < len ; i += 1) {
                 new Resource({
                     url: data[i].id['$t'],
@@ -497,9 +504,22 @@ Mail.prototype.notify = function (name, content, response) {
     }
 }
 
-Mail.prototype.query = function (people, time, num) {
+Mail.prototype.query = function (people, time, num, offset) {
     time = time || 0;
     num = num || 5;
+	var self = this;
+	database.transaction(function (tx) {
+		tx.executeSql('SELECT * FROM history where people=? order by timestamp DESC limit ? offset ?', [people, num, offset], function (tx, result) {
+			var len = result.rows.length, i, history = [];console.log(result)
+			for (i = 0; i < len; i += 1) {
+				history.push(result.rows.item(i));console.log(result.rows.item(i).timestamp)
+			}
+			self.port.postMessage({cmd: 'mergeHistory', people: people, history: history});
+		}, function () {
+			console.log(arguments)
+		});
+	});
+	/*
     var objectStore = database.transaction(['history'], webkitIDBTransaction.READ_ONLY).objectStore('history'), request, keyRange, self = this, history = [];
     keyRange = webkitIDBKeyRange.only(people);
     request = objectStore.index('people').openCursor(keyRange, webkitIDBCursor.PREV);//
@@ -520,9 +540,11 @@ Mail.prototype.query = function (people, time, num) {
         }
     }, this), false);
     request.addEventListener('error', function (e) {console.log(e)}, false);
+	*/
 };
 
 Mail.prototype.save = function (people, from, content, timestamp) {
+	/*
     var objectStore = database.transaction(['history'], webkitIDBTransaction.READ_WRITE).objectStore('history'), request;
     request = objectStore.add({
         people: people,
@@ -530,6 +552,10 @@ Mail.prototype.save = function (people, from, content, timestamp) {
         content: content,
         timestamp: timestamp
     });
+	*/
+	database.transaction(function (tx) {
+		tx.executeSql('INSERT INTO history VALUES (?,?,?,?)', [people, from, content, Date()]);
+	});
 };
 
 

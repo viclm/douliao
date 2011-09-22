@@ -46,6 +46,11 @@
             }
 
             self.me = response.me;
+			var image = new Image();
+			image.onload = function () {
+				self.me.oldIcon = self.greyscale(image);
+			}
+			image.src = response.me.icon;
             self.friends = friends;
             self.start();
 
@@ -127,15 +132,20 @@
 
                 self.open({target: document.getElementById(msg.people)});
                 break;
-            case 'mergeHistory':console.log(msg)
+            case 'mergeHistory':console.log(msg, 1)
                 if (msg.people === self.current) {
-                    for (var i = 0, len = msg.history.length, item ; i < len ; i += 1) {
+					var i = 0, len = msg.history.length, item, image;
+					if (len > 0) {
+						self.addContent('<p>' + new Date(msg.history[0].timestamp).getHours() + ':' + new Date(msg.history[0].timestamp).getMinutes() + '</p>', 'time', true);
+						image = self.greyscale(document.getElementById(msg.people).querySelector('img'));
+					}
+                    for (; i < len ; i += 1) {
                         item = msg.history[i];
-                        if (item.from === 'ta') {
-                            self.addContent('<img src="' + self.friends[msg.people].icon + '"><p>' + item.content + '</p>', 'left old');
+                        if (item.f === 'ta') {
+                            self.addContent('<img src="' + image + '"><p>' + item.content + '</p>', 'left old', true);
                         }
                         else {
-                            self.addContent('<img src="' + self.me.icon + '"><p>' + item.content + '</p>', 'right old');
+                            self.addContent('<img src="' + self.me.oldIcon + '"><p>' + item.content + '</p>', 'right old', true);
                         }
                     }
                     self.friends[msg.people].gina = true;
@@ -172,7 +182,7 @@
             target.className = 'entry active';
             this.current = id;
             if (this.friends[id].gina === undefined) {
-                this.port.postMessage({cmd: 'fetchHistory', people: id});
+                this.port.postMessage({cmd: 'fetchHistory', people: id, offset: this.content.querySelectorAll('div').length});
             }
         }
     };
@@ -288,17 +298,45 @@
         this.friendsList.insertBefore(document.getElementById(msg.people), this.friendsList.querySelector('div'));
     };
 
-    DChat.prototype.addContent = function (html, className) {
+    DChat.prototype.addContent = function (html, className, first) {
         var div = document.createElement('div'), scrollHeight = this.messageList.scrollHeight;
         div.className = className;
         div.innerHTML = html;
-        this.messageList.appendChild(div);
+		if (first) {
+			this.messageList.insertBefore(div, this.messageList.querySelector('div'));
+		}
+		else {
+			this.messageList.appendChild(div);
+		}
         if (div.getElementsByTagName('img').length > 0) {
             scrollHeight += 41;
         }
         this.messageList.scrollTop = scrollHeight;
         return div;
     };
+
+	DChat.prototype.greyscale = function (image) {
+		var canvas, ctx, imageData, pixels, numPixels, i, average, width, height;
+		width = image.width;
+		height = image.height;
+		canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+		ctx = canvas.getContext('2d');
+		ctx.drawImage(image, 0, 0);
+		imageData = ctx.getImageData(0, 0, width, height);
+		pixels = imageData.data;
+		numPixels = pixels.length;
+		ctx.clearRect(0, 0, width, height);
+		for (i = 0; i < numPixels; i += 1) {
+			average = (pixels[i*4]+pixels[i*4+1]+pixels[i*4+2])/3;
+			pixels[i*4] = average; // Red
+			pixels[i*4+1] = average; // Green
+			pixels[i*4+2] = average; // Blue
+		};
+		ctx.putImageData(imageData, 0, 0);
+		return canvas.toDataURL();
+	}
 
     DChat.prototype.lock = function (status) {
         this.textbox.disabled = status;
