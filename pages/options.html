@@ -170,6 +170,7 @@ section > div:only-of-type label {
         <h1>选项</h1>
         <ul>
             <li id="browserPageNav" class="selected">基本设置</li>
+            <li id="pluginsPageNav">插件</li>
             <li id="aboutPageNav">关于</li>
         </ul>
     </div>
@@ -194,8 +195,18 @@ section > div:only-of-type label {
                 <h3>历史记录：</h3>
                 <div>
                     <label><input type="checkbox" name="history">保存历史记录(本地)</label>
+                    <p class="commit">清除浏览器缓存可能会丢失历史记录</p>
                     <label><input type="checkbox" name="deleteMails">删除原始邮件</label>
                     <p class="commit">删除豆瓣网上的邮件</p>
+                </div>
+            </section>
+        </div>
+        <div id="pluginsPage">
+            <h1>插件</h1>
+            <section id="keyboardFlipSection">
+                <h3>键盘翻页：</h3>
+                <div>
+                    <label><input type="checkbox" name="keyboardFlip">开启</label>
                 </div>
             </section>
         </div>

@@ -1,6 +1,10 @@
 'use strict';
-localStorage.config && (JSON.parse(localStorage.config).offline !== undefined) && (JSON.parse(localStorage.config).history !== undefined) && (JSON.parse(localStorage.config).deleteMails !== undefined)
-|| (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true, offline: true, history: true, deleteMails: false}));
+localStorage.config || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true}));
+var c = JSON.parse(localStorage.config);
+if (c.offline === undefined) {c.offline = true; localStorage.config = JSON.stringify(c)};
+if (c.history === undefined) {c.history = true; localStorage.config = JSON.stringify(c)};
+if (c.deleteMails === undefined) {c.deleteMails = false; localStorage.config = JSON.stringify(c)};
+if (c.keyboardFlip === undefined) {c.keyboardFlip = true; localStorage.config = JSON.stringify(c)};
 
 if (!localStorage.friends) {
     localStorage.setItem('friends', '{}');
@@ -39,7 +43,8 @@ dbRequest.onsuccess = function(e) {
 */
 var database = openDatabase('dchat', '1.0', 'dchat database', 4 * 1024 * 1024);
 database.transaction(function (tx) {
-  tx.executeSql('CREATE TABLE IF NOT EXISTS history (people text, f text, content text, timestamp date)');
+    tx.executeSql('DROP TABLE IF EXISTS history');
+    tx.executeSql('CREATE TABLE IF NOT EXISTS historyx (people text, f text, content text, timestamp text)');
 });
 
 
@@ -125,6 +130,7 @@ function Mail(args) {
     this.me = {};
     this.people = {};
     this.friends = JSON.parse(localStorage.friends);
+    this.isUpdateFriends = false;
     this.filterRegTest = /:[\r\n]+\|/m;
     this.filterRegFront = /^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
     this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
@@ -204,7 +210,10 @@ Mail.prototype.portHandler = function(port) {
         self.timer && clearInterval(self.timer);
         self.receive();
         self.timer = setInterval(self.proxy(self.receive, self), 10000);
-        self.updateFriends();
+        //if (!self.isUpdateFriends) {
+            //self.isUpdateFriends = true;
+            //self.updateFriends();
+        //}
 
         port.onMessage.addListener(function(msg) {
             switch (msg.cmd) {
@@ -254,6 +263,26 @@ Mail.prototype.portHandler = function(port) {
                         }
                     }
                 }).request();
+                break;
+            case 'updateFriend':
+                new Resource({
+                    url: 'http://api.douban.com/people/' + msg.people,
+                    method: 'get',
+                    data: 'alt=json',
+                    load: function (data) {
+                        data = JSON.parse(data);
+                        self.friends[data['db:uid']['$t']] = {
+                            id: data['db:uid']['$t'],
+                            name: data.title['$t'],
+                            icon: data['link'][2]['@href'],
+                            sign: data['db:signature']['$t']
+                        };
+                        localStorage.friends = JSON.stringify(self.friends);
+                    }
+                }).request();
+                break;
+            case 'addAllFriends':
+                self.addAllFriends(1);
                 break;
             case 'deleteFriend':
                 delete self.friends[msg.people];console.log(self.friends, msg.people)
@@ -349,6 +378,41 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
     }
 };
 
+Mail.prototype.addAllFriends = function (index) {
+    var self = this;
+    new Resource({
+        url: 'http://api.douban.com/people/' + self.me.id + '/contacts',
+        method: 'get',
+        data: 'alt=json&start-index=' + index + '&max-results=50',
+        load: function (data) {
+            var entry = JSON.parse(data).entry, friends = [], person, i = 0, len = entry.length, item;
+            if (len === 50) {
+                self.addAllFriends(index + 50);
+            }
+            for (; i < len ; i += 1) {
+                item = entry[i];/*
+                friends.push({
+                people: item['db:uid']['$t'],
+                name: item.title['$t'],
+                icon: item['link'][2]['@href'],
+                sign: item['db:signature']['$t']
+                });*/
+                person = {
+                    people: item['db:uid']['$t'],
+                    name: item.title['$t'],
+                    icon: item['link'][2]['@href'],
+                    sign: item['db:signature']['$t']
+                };
+                self.friends[person.people] = person;
+                localStorage.friends = JSON.stringify(self.friends);
+                person.cmd = 'join';
+                person.active = false;
+                self.port.postMessage(person);
+            }
+        }
+    }).request();
+};
+
 Mail.prototype.updateFriends = function () {
     var key, counter = 1, self = this;
     for (key in self.friends) {
@@ -426,7 +490,7 @@ Mail.prototype.receive = function () {
         data: 'start-index=1&alt=json',
         load: function (data, e) {
             var i, len, key, people, mails = [];
-            data = JSON.parse(data).entry;console.log(data.length)
+            data = JSON.parse(data).entry;if (data.length > 1) {console.log(data.length)}
             for (i = 0, len = data.length ; i < len ; i += 1) {
                 new Resource({
                     url: data[i].id['$t'],
@@ -509,8 +573,8 @@ Mail.prototype.query = function (people, time, num, offset) {
     num = num || 5;
 	var self = this;
 	database.transaction(function (tx) {
-		tx.executeSql('SELECT * FROM history where people=? order by timestamp DESC limit ? offset ?', [people, num, offset], function (tx, result) {
-			var len = result.rows.length, i, history = [];console.log(result)
+		tx.executeSql('SELECT * FROM historyx WHERE people=? ORDER BY timestamp DESC LIMIT ? OFFSET ?', [people, num, offset], function (tx, result) {
+			var len = result.rows.length, i, history = [];
 			for (i = 0; i < len; i += 1) {
 				history.push(result.rows.item(i));console.log(result.rows.item(i).timestamp)
 			}
@@ -554,27 +618,42 @@ Mail.prototype.save = function (people, from, content, timestamp) {
     });
 	*/
 	database.transaction(function (tx) {
-		tx.executeSql('INSERT INTO history VALUES (?,?,?,?)', [people, from, content, Date()]);
-	});
+		tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now"))', [people, from, content]);
+	}, function(){}, function () {console.log(arguments)});
 };
 
 
 oauth(function () {
     new Mail();
 });
-/*
+
+
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (tab.status !== 'complete' && /^http:\/\/www.douban.com\/people\/[^\/]+?\/?$/i.test(tab.url)) {
-        chrome.tabs.executeScript(tabId, {file: "src/contentscript.js"});
+    var config = JSON.parse(localStorage.config);
+    if (tab.status === 'loading') {
+        if (/^http:\/\/www.douban.com\/people\/[^\/]+?\/?$/i.test(tab.url)) {
+            chrome.tabs.executeScript(tabId, {file: "src/contentscript.js"});
+        }
+        else if (config.keyboardFlip && /^http:\/\/www.douban.com\/group\/.*/i.test(tab.url)){
+            chrome.tabs.executeScript(tabId, {file: "src/keyboardFlip.js"});
+        }
     }
 });
-var i = 0;
-        while (i < this.unread.length) {
-            if (this.unread[i].people === people) {
-                res = res.concat(this.unread.splice(i, 1));
-            }
-            else {
-                i += 1;
-            }
+
+
+/*
+*
+*
+    "content_scripts": [
+        {
+            "matches": ["http://www.douban.com/people/*"],
+            "js": ["src/contentscript.js"]
+        },
+        {
+            "matches": ["http://www.douban.com/group/*"],
+            "js": ["src/keyboardFlip.js"]
         }
-*/
+    ],
+*
+*
+* */

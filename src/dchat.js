@@ -15,6 +15,9 @@
         this.msgRequreToken = null;
         this.isLock = false;
 
+        var self = this;
+
+        document.querySelector('nav input').addEventListener('input', this.proxy(this.search, this), false);
         this.delegate(this.friendsList, '.entry', 'click', this.proxy(this.open, this));
         this.delegate(this.friendsList, 'input', 'click', this.proxy(this.delete, this));
         //this.content.querySelector('header input').addEventListener('click', this.proxy(this.close, this), false);
@@ -27,11 +30,14 @@
             this.modal.style.display = 'none';
         }, this), false);
         this.modal.querySelector('form').addEventListener('submit', this.proxy(this.add, this), false);
+        this.modal.querySelector('input[type=button]').addEventListener('click', function () {
+            self.port.postMessage({cmd: 'addAllFriends'});
+            self.modal.style.display = 'none';
+        }, false);
         this.content.addEventListener( 'webkitTransitionEnd', function (e) {
             if (self.current) {this.style.left = '30%';}
         }, false )
 
-        var self = this;
         chrome.extension.sendRequest({cmd: 'initial'}, function(response) {
             var friends = response.friends, key, div;
 
@@ -130,7 +136,9 @@
                     self.friends[msg.people] = msg;
                 }
 
-                self.open({target: document.getElementById(msg.people)});
+                if (msg.active !== false) {
+                    self.open({target: document.getElementById(msg.people)});
+                }
                 break;
             case 'mergeHistory':console.log(msg, 1)
                 if (msg.people === self.current) {
@@ -153,6 +161,27 @@
                 break;
             }
         });
+    };
+
+    DChat.prototype.search = function (e) {
+        var keyword = e.target.value, key, reg = new RegExp(keyword, 'i'), first;
+        for (key in this.friends) {
+            if (reg.test(this.friends[key].name)) {
+                document.getElementById(key).style.display = 'block';
+                if (first === undefined) {
+                    first = document.getElementById(key);
+                }
+            }
+            else {
+                document.getElementById(key).style.display = 'none';
+            }
+        }
+        if (first) {
+            this.open({target: first});
+        }
+        else if (this.current) {
+            this.close();
+        }
     };
 
     DChat.prototype.open = function (e) {
@@ -183,6 +212,7 @@
             this.current = id;
             if (this.friends[id].gina === undefined) {
                 this.port.postMessage({cmd: 'fetchHistory', people: id, offset: this.content.querySelectorAll('div').length});
+                this.port.postMessage({cmd: 'updateFriend', people: id});
             }
         }
     };
