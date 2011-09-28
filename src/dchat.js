@@ -144,7 +144,7 @@
                 if (msg.people === self.current) {
 					var i = 0, len = msg.history.length, item, image;
 					if (len > 0) {
-						self.addContent('<p>' + new Date(msg.history[0].timestamp).getHours() + ':' + new Date(msg.history[0].timestamp).getMinutes() + '</p>', 'time', true);
+						self.addContent('<p>' + self.strftime(msg.history[0].timestamp) + '</p>', 'time', true);
 						image = self.greyscale(document.getElementById(msg.people).querySelector('img'));
 					}
                     for (; i < len ; i += 1) {
@@ -345,28 +345,55 @@
         return div;
     };
 
-	DChat.prototype.greyscale = function (image) {
-		var canvas, ctx, imageData, pixels, numPixels, i, average, width, height;
-		width = image.width;
-		height = image.height;
-		canvas = document.createElement('canvas');
-		canvas.width = width;
-		canvas.height = height;
-		ctx = canvas.getContext('2d');
-		ctx.drawImage(image, 0, 0);
-		imageData = ctx.getImageData(0, 0, width, height);
-		pixels = imageData.data;
-		numPixels = pixels.length;
-		ctx.clearRect(0, 0, width, height);
-		for (i = 0; i < numPixels; i += 1) {
-			average = (pixels[i*4]+pixels[i*4+1]+pixels[i*4+2])/3;
-			pixels[i*4] = average; // Red
-			pixels[i*4+1] = average; // Green
-			pixels[i*4+2] = average; // Blue
-		};
-		ctx.putImageData(imageData, 0, 0);
-		return canvas.toDataURL();
-	}
+    DChat.prototype.greyscale = function (image) {
+        var canvas, ctx, imageData, pixels, numPixels, i, average, width, height;
+        width = image.width;
+        height = image.height;
+        canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        imageData = ctx.getImageData(0, 0, width, height);
+        pixels = imageData.data;
+        numPixels = pixels.length;
+        ctx.clearRect(0, 0, width, height);
+        for (i = 0; i < numPixels; i += 1) {
+            average = (pixels[i*4]+pixels[i*4+1]+pixels[i*4+2])/3;
+            pixels[i*4] = average; // Red
+            pixels[i*4+1] = average; // Green
+            pixels[i*4+2] = average; // Blue
+        };
+        ctx.putImageData(imageData, 0, 0);
+        return canvas.toDataURL();
+    }
+
+    DChat.prototype.strftime = function (time) {
+        var now = new Date(), time = new Date(time), str, modifier;
+        if (modifier = now.getFullYear() - time.getFullYear()) {
+            modifier += '年前';
+        }
+        else if (modifier = now.getMonth() - time.getMonth()) {
+            modifier += '月前';
+        }
+        else if (modifier = now.getDate() - time.getDate()) {
+            if (modifier === 1) {
+                modifier = '昨天';
+            }
+            else if (modifier === 2) {
+                modifier = '前天';
+            }
+            else {
+                modifier += '天前';
+            }
+        }
+
+        str = (time.getHours() > 9 ? time.getHours() : '0' + time.getHours()) + ' : ' + (time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes());
+        if (modifier) {
+            str = modifier + ' ' + str;
+        }
+        return str;
+    };
 
     DChat.prototype.lock = function (status) {
         this.textbox.disabled = status;

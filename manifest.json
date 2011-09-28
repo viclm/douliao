@@ -1,6 +1,6 @@
 {
     "name": "豆瓣聊",
-    "version": "3.1.1",
+    "version": "3.1.2",
     "description": "豆瓣即时聊天工具",
     "icons": {
         "16": "assets/icon16.png",
@@ -11,7 +11,7 @@
     "background_page": "pages/background.html",
     "browser_action": {
         "default_icon": "assets/icon16.png",
-        "default_title": "豆聊"
+        "default_title": "豆瓣聊"
     },
     "permissions": [
         "tabs",

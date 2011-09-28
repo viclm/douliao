@@ -618,7 +618,7 @@ Mail.prototype.save = function (people, from, content, timestamp) {
     });
 	*/
 	database.transaction(function (tx) {
-		tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now"))', [people, from, content]);
+		tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now", "localtime"))', [people, from, content]);
 	}, function(){}, function () {console.log(arguments)});
 };
 

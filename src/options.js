@@ -22,7 +22,7 @@
 
     function navTab() {
         if (navTab.last !== this.id) {
-            document.getElementById(this.id.slice(0, -3)).style.display = '';
+            document.getElementById(this.id.slice(0, -3)).style.display = 'block';console.log(document.getElementById(this.id.slice(0, -3)))
             this.className = 'selected';
             document.getElementById(navTab.last.slice(0, -3)).style.display = 'none';
             document.getElementById(navTab.last).className = '';
