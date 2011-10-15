@@ -41,7 +41,7 @@
         this.tmpMsg = document.createElement('p');
         this.tmpMsg.className = 'tmpMsg';
         this.tmpMsg.addEventListener('webkitTransitionEnd', function () {
-            this.real.style.display = 'block';
+            this.real.style.visibility = 'visible';
             this.style.display = 'none';
             this.style.webkitTransform = 'translate(0, 0)';
         }, false);
@@ -301,8 +301,7 @@
                 this.tmpMsg.real = newMsg;
                 this.tmpMsg.innerHTML = value;
                 this.tmpMsg.style.cssText = 'display: block; left: ' + tPosition.left + 'px; top: ' + tPosition.top + 'px; height: 28px; width: ' + tPosition.width + 'px;';
-                
-                newMsg.style.display = 'none';
+                newMsg.style.visibility = 'hidden';
                 setTimeout(function () {
                     self.tmpMsg.style.webkitTransform = 'translate(' + (sPosition.left - tPosition.left) + 'px, ' + (sPosition.top - tPosition.top) + 'px)';
                     self.tmpMsg.style.width = sPosition.width + 'px';
@@ -353,12 +352,12 @@
         var div = document.createElement('div'), scrollHeight = this.messageList.scrollHeight;
         div.className = className;
         div.innerHTML = html;
-		if (first) {
-			this.messageList.insertBefore(div, this.messageList.querySelector('div'));
-		}
-		else {
-			this.messageList.appendChild(div);
-		}
+        if (first) {
+            this.messageList.insertBefore(div, this.messageList.querySelector('div'));
+        }
+        else {
+            this.messageList.appendChild(div);
+        }
         if (div.getElementsByTagName('img').length > 0) {
             scrollHeight += 41;
         }
