@@ -36,7 +36,16 @@
         }, false);
         this.content.addEventListener( 'webkitTransitionEnd', function (e) {
             if (self.current) {this.style.left = '30%';}
-        }, false )
+        }, false );
+
+        this.tmpMsg = document.createElement('p');
+        this.tmpMsg.className = 'tmpMsg';
+        this.tmpMsg.addEventListener('webkitTransitionEnd', function () {
+            this.real.style.display = 'block';
+            this.style.display = 'none';
+            this.style.webkitTransform = 'translate(0, 0)';
+        }, false);
+        document.body.appendChild(this.tmpMsg);
 
         chrome.extension.sendRequest({cmd: 'initial'}, function(response) {
             var friends = response.friends, key, div;
@@ -286,7 +295,19 @@
                 this.msgRequreToken = null;
             }
             else {
-                this.addContent('<img src="' + this.me.icon + '"><p>' + value + '</p>', 'right');
+                var newMsg = this.addContent('<img src="' + this.me.icon + '"><p>' + value + '</p>', 'right'), sPosition, tPosition;
+                sPosition = newMsg.querySelector('p').getBoundingClientRect();
+                tPosition = this.textbox.getBoundingClientRect();
+                this.tmpMsg.real = newMsg;
+                this.tmpMsg.innerHTML = value;
+                this.tmpMsg.style.cssText = 'display: block; left: ' + tPosition.left + 'px; top: ' + tPosition.top + 'px; height: 28px; width: ' + tPosition.width + 'px;';
+                
+                newMsg.style.display = 'none';
+                setTimeout(function () {
+                    self.tmpMsg.style.webkitTransform = 'translate(' + (sPosition.left - tPosition.left) + 'px, ' + (sPosition.top - tPosition.top) + 'px)';
+                    self.tmpMsg.style.width = sPosition.width + 'px';
+                    self.tmpMsg.style.height = sPosition.height + 'px';
+                }, 0);
                 this.port.postMessage({cmd: 'send', content: value, people: self.current});
             }
 
