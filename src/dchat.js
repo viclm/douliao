@@ -5,7 +5,8 @@
         this.content = document.querySelector('#content');
         this.friendsList = this.sidebar.querySelector('section');
         this.messageList = this.content.querySelector('section');
-        this.textbox = this.content.querySelector('footer input[type=text]');
+        this.textbox = this.content.querySelector('footer textarea');
+        this.historyList = this.content.querySelector('#history');
         this.modal = document.querySelector('aside');
 
         this.current = null;
@@ -17,15 +18,40 @@
 
         var self = this;
 
+        setTimeout(this.proxy(function () {
+            this.historyList.style.height = window.innerHeight - 40 - this.content.querySelector('nav').getBoundingClientRect().height + 'px';
+        }, this), 200);
+
         document.querySelector('nav input').addEventListener('input', this.proxy(this.search, this), false);
         this.delegate(this.friendsList, '.entry', 'click', this.proxy(this.open, this));
         this.delegate(this.friendsList, 'input', 'click', this.proxy(this.delete, this));
-        //this.content.querySelector('header input').addEventListener('click', this.proxy(this.close, this), false);
         this.textbox.parentNode.addEventListener('submit', this.proxy(this.send, this), false);
         this.sidebar.querySelector('footer input').addEventListener('click', this.proxy(this.edit, this), false);
         this.sidebar.querySelector('footer input:last-of-type').addEventListener('click', this.proxy(function () {
             this.modal.style.display = 'block';
         }, this), false);
+        this.textbox.addEventListener('input', function (e) {
+            var diff = this.scrollHeight - this.offsetHeight, r, p;
+            if (diff) {
+                r = this.value.match(/\n/g);
+                if (r) {
+                    p = r.length;
+                }
+                else {
+                    p = 0;
+                }
+                this.style.height = 28 + 18 * p + 'px';
+                self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
+            }
+        }, false);
+        /*this.delegate(this.content.querySelector('nav'), 'a', 'click', this.proxy(function (e) {
+            e.preventDefault();
+            return false;
+        }));*/
+        this.delegate(this.historyList, 'a.more', 'click', function (e) {
+            self.port.postMessage({cmd: 'fetchHistory', people: self.current, offset: self.content.querySelectorAll('#chat div, #history div').length});
+            e.preventDefault();
+        });
         this.modal.querySelector('span').addEventListener('click', this.proxy(function () {
             this.modal.style.display = 'none';
         }, this), false);
@@ -35,7 +61,7 @@
             self.modal.style.display = 'none';
         }, false);
         this.content.addEventListener( 'webkitTransitionEnd', function (e) {
-            if (self.current) {this.style.left = '30%';}
+            if (self.current) {this.style.left = '25%';}
         }, false );
 
         this.tmpMsg = document.createElement('p');
@@ -61,11 +87,11 @@
             }
 
             self.me = response.me;
-			var image = new Image();
-			image.onload = function () {
-				self.me.oldIcon = self.greyscale(image);
-			}
-			image.src = response.me.icon;
+            var image = new Image();
+            image.onload = function () {
+                self.me.oldIcon = self.greyscale(image);
+            }
+            image.src = response.me.icon;
             self.friends = friends;
             self.start();
 
@@ -149,20 +175,32 @@
                     self.open({target: document.getElementById(msg.people)});
                 }
                 break;
-            case 'mergeHistory':console.log(msg, 1)
+            case 'mergeHistory':
                 if (msg.people === self.current) {
-					var i = 0, len = msg.history.length, item, image;
-					if (len > 0) {
-						self.addContent('<p>' + self.strftime(msg.history[0].timestamp) + '</p>', 'time', true);
-						image = self.greyscale(document.getElementById(msg.people).querySelector('img'));
-					}
+                    var i = 0, len = msg.history.length, item, image, more;
                     for (; i < len ; i += 1) {
                         item = msg.history[i];
                         if (item.f === 'ta') {
-                            self.addContent('<img src="' + image + '"><p>' + item.content + '</p>', 'left old', true);
+                            self.addContent('<img src="' + self.friends[msg.people].oldIcon + '"><p>' + item.content + '  ' + self.strftime(item.timestamp) + '</p>', 'left old', true);
                         }
                         else {
-                            self.addContent('<img src="' + self.me.oldIcon + '"><p>' + item.content + '</p>', 'right old', true);
+                            self.addContent('<img src="' + self.me.oldIcon + '"><p>' + item.content + '  ' + self.strftime(item.timestamp) + '</p>', 'right old', true);
+                        }
+                    }
+
+                    more = self.historyList.querySelector('.more');
+                    if (msg.final) {
+                        if (more) {
+                            self.historyList.removeChild(more);
+                        }
+                    }
+                    else {
+                        if (!more) {
+                            more = document.createElement('a');
+                            more.href = '#';
+                            more.className = 'more';
+                            more.innerHTML = '更多';
+                            self.historyList.insertBefore(more, self.historyList.firstChild);
                         }
                     }
                     self.friends[msg.people].gina = true;
@@ -195,14 +233,15 @@
 
     DChat.prototype.open = function (e) {
         var target = e.target, id = target.id, i, len, self = this;
-        if (this.current !== id) {console.log(this.current, id)
+        if (this.current !== id) {
             if (this.current) {
-                this.friends[this.current].history = this.messageList.innerHTML;
+                this.friends[this.current].message = this.messageList.innerHTML;
+                this.friends[this.current].history = this.historyList.innerHTML;
             }
-            this.messageList.innerHTML = this.friends[id].history || '';
+            this.messageList.innerHTML = this.friends[id].message || '';
+            this.historyList.innerHTML = this.friends[id].history || '';
             for (i = 0, len = this.friends[id].unread.length ; i < len ; i += 1) {
                 this.addContent('<img src="' + this.friends[id].unread[i].icon + '"><p>' + this.friends[id].unread[i].content + '</p>', 'left');
-                //this.lock(false);
             }
             if (len > 0) {
                 this.friends[id].unread = [];
@@ -212,16 +251,17 @@
 
             if (this.current) {
                 document.getElementById(this.current).className = 'entry';
-                this.content.style.left = '-40%';
+                this.content.style.left = '-50%';
             }
             else {
-                this.content.style.left = '30%';
+                this.content.style.left = '25%';
             }
             target.className = 'entry active';
             this.current = id;
             if (this.friends[id].gina === undefined) {
-                this.port.postMessage({cmd: 'fetchHistory', people: id, offset: this.content.querySelectorAll('div').length});
+                this.port.postMessage({cmd: 'fetchHistory', people: id, offset: this.messageList.querySelectorAll('div').length});
                 this.port.postMessage({cmd: 'updateFriend', people: id});
+                this.friends[id].oldIcon = this.greyscale(document.getElementById(id).querySelector('img'));
             }
         }
     };
@@ -229,9 +269,10 @@
     DChat.prototype.close = function () {
         var entry = document.getElementById(this.current);
         entry.className = 'entry';
-        this.friends[this.current].history = this.messageList.innerHTML;
+        this.friends[this.current].message = this.messageList.innerHTML;
+        this.friends[this.current].history = this.historyList.innerHTML;
         this.current = null;
-        this.content.style.left = '-40%';
+        this.content.style.left = '-60%';
     };
 
     DChat.prototype.edit = function (e) {
@@ -353,7 +394,7 @@
         div.className = className;
         div.innerHTML = html;
         if (first) {
-            this.messageList.insertBefore(div, this.messageList.querySelector('div'));
+            this.historyList.insertBefore(div, this.historyList.querySelector('div'));
         }
         else {
             this.messageList.appendChild(div);
@@ -412,6 +453,13 @@
         if (modifier) {
             str = modifier + ' ' + str;
         }
+        return str;
+    };
+
+    DChat.prototype.strftime = function (time) {
+        var time = new Date(time), str;
+        str = time.getMonth() + 1 + '月' + time.getDate() + '日 ';
+        str += (time.getHours() > 9 ? time.getHours() : '0' + time.getHours()) + ' : ' + (time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes());
         return str;
     };
 

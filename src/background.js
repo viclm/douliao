@@ -570,56 +570,29 @@ Mail.prototype.notify = function (name, content, response) {
 
 Mail.prototype.query = function (people, time, num, offset) {
     time = time || 0;
-    num = num || 5;
-	var self = this;
-	database.transaction(function (tx) {
-		tx.executeSql('SELECT * FROM historyx WHERE people=? ORDER BY timestamp DESC LIMIT ? OFFSET ?', [people, num, offset], function (tx, result) {
-			var len = result.rows.length, i, history = [];
-			for (i = 0; i < len; i += 1) {
-				history.push(result.rows.item(i));console.log(result.rows.item(i).timestamp)
-			}
-			self.port.postMessage({cmd: 'mergeHistory', people: people, history: history});
-		}, function () {
-			console.log(arguments)
-		});
-	});
-	/*
-    var objectStore = database.transaction(['history'], webkitIDBTransaction.READ_ONLY).objectStore('history'), request, keyRange, self = this, history = [];
-    keyRange = webkitIDBKeyRange.only(people);
-    request = objectStore.index('people').openCursor(keyRange, webkitIDBCursor.PREV);//
-    request.addEventListener('success', this.proxy(function (e) {
-        var cursor = event.target.result;
-        if (cursor) {console.log(cursor.value)
-            history.push(cursor.value);
-            if (history.length >= num) {
-                self.port.postMessage({cmd: 'mergeHistory', people: people, history: history});
+    num = num || 10;
+    var self = this;
+    database.transaction(function (tx) {
+        tx.executeSql('SELECT * FROM historyx WHERE people=? ORDER BY timestamp DESC LIMIT ? OFFSET ?', [people, num, offset], function (tx, result) {
+            var len = result.rows.length, i, history = [];
+            for (i = 0; i < len; i += 1) {
+                history.push(result.rows.item(i));
             }
-            else {
-                cursor.continue();
-            }
-        }
-        else {
-            console.log(history)
-            self.port.postMessage({cmd: 'mergeHistory', people: people, history: history});
-        }
-    }, this), false);
-    request.addEventListener('error', function (e) {console.log(e)}, false);
-	*/
+            self.port.postMessage({cmd: 'mergeHistory', people: people, history: history, final: num !== len});
+        }, function () {
+            console.log(arguments)
+        });
+    });
 };
 
 Mail.prototype.save = function (people, from, content, timestamp) {
-	/*
-    var objectStore = database.transaction(['history'], webkitIDBTransaction.READ_WRITE).objectStore('history'), request;
-    request = objectStore.add({
-        people: people,
-        from: from,
-        content: content,
-        timestamp: timestamp
+    database.transaction(function (tx) {
+        tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now", "localtime"))', [people, from, content]);
+    }, function(){}, function (tx, e) {
+        if (e.code === 4) {
+            tx.executeSql('DELETE FROM historyx WHERE timestamp<datetime("now", "localtime", "-1 day")', [])
+        }
     });
-	*/
-	database.transaction(function (tx) {
-		tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now", "localtime"))', [people, from, content]);
-	}, function(){}, function () {console.log(arguments)});
 };
 
 

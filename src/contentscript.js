@@ -5,7 +5,7 @@
         if (container === null) {return;}
 
         button = container.querySelector('a.mr5').cloneNode(false);
-        button.innerHTML = '豆聊';
+        button.innerHTML = '豆瓣聊';
         button.style.marginLeft = '5px';
         container.insertBefore(button, document.getElementById('divac'));
         button.addEventListener('click', function (e) {
