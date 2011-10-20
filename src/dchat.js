@@ -44,8 +44,12 @@
                 self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
             }
         }, false);
-		this.textbox.addEventListener('keyup', this.proxy(function (e) {
-			if (e.keyCode === 13 && e.ctrlKey) {this.send(e);}
+		this.textbox.addEventListener('keydown', this.proxy(function (e) {
+			if (e.keyCode === 13 && e.ctrlKey) {
+                e.preventDefault();
+                this.send(e);
+                return false;
+            }
 		}, this), false);
         this.delegate(this.content.querySelector('nav'), 'a', 'click', this.proxy(function (e) {
             e.preventDefault();
