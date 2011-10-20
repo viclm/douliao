@@ -44,10 +44,13 @@
                 self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
             }
         }, false);
-        /*this.delegate(this.content.querySelector('nav'), 'a', 'click', this.proxy(function (e) {
+		this.textbox.addEventListener('keyup', this.proxy(function (e) {
+			if (e.keyCode === 13 && e.ctrlKey) {this.send(e);}
+		}, this), false);
+        this.delegate(this.content.querySelector('nav'), 'a', 'click', this.proxy(function (e) {
             e.preventDefault();
             return false;
-        }));*/
+        }));
         this.delegate(this.historyList, 'a.more', 'click', function (e) {
             self.port.postMessage({cmd: 'fetchHistory', people: self.current, offset: self.content.querySelectorAll('#chat div, #history div').length});
             e.preventDefault();
@@ -60,9 +63,9 @@
             self.port.postMessage({cmd: 'addAllFriends'});
             self.modal.style.display = 'none';
         }, false);
-        this.content.addEventListener( 'webkitTransitionEnd', function (e) {
+        /*this.content.addEventListener( 'webkitTransitionEnd', function (e) {
             if (self.current) {this.style.left = '25%';}
-        }, false );
+        }, false );*/
 
         this.tmpMsg = document.createElement('p');
         this.tmpMsg.className = 'tmpMsg';
@@ -115,22 +118,30 @@
     };
 
     DChat.prototype.delegate = function (node, selector, type, handler) {
-        var result = /^([a-z]+)?(?:\.(.+))?$/i.exec(selector), nodeName, className, self = this;
-        nodeName = result[1];
+        var result = /^([a-z]+)?(\.(?:.+))*$/i.exec(selector), nodeName, className, self = this;
+        nodeName = result[1] ? '^' + result[1] : '^';
         className = result[2];
-        this.delegate.save || (this.delegate.save = {});
+		if (className) {
+			className = '[' + className.replace(/[^.]\./g, '|.') + ']{' + className.match(/\./g).length + '}$';
+		}
+		else {
+			className = '$';
+		}
+        //this.delegate.save || (this.delegate.save = {});
+		node.delegate || (node.delegate = {});
+		node.delegate[selector] = {nodeName: nodeName, className: className, handler: handler, reg: new RegExp(nodeName + className, 'i')};
         this.delegate.nodeList || (this.delegate.nodeList = []);
-        this.delegate.save[selector] = {nodeName: nodeName, className: className, handler: handler};
+        //this.delegate.save[selector] = {nodeName: nodeName, className: className, handler: handler};
         if (this.delegate.nodeList.indexOf(node) === -1) {
             node.addEventListener(type, function (e) {
                 var target = e.target, key, tmp;
                 do {
-                    for (key in self.delegate.save) {
-                        tmp = self.delegate.save[key];
-                        if ((tmp.nodeName === undefined || target.nodeName.toLowerCase() === tmp.nodeName) && (tmp.className === undefined || target.className === tmp.className)) {
+                    for (key in node.delegate) {
+                        tmp = node.delegate[key];
+                        if (Array.prototype.indexOf.call(node.querySelectorAll(key), target) > -1) {
                             delete e.target;
                             e.target = target;
-                            tmp.handler(e);
+                            tmp.handler.call(target, e);
                             return;
                         }
                     }
@@ -251,7 +262,6 @@
 
             if (this.current) {
                 document.getElementById(this.current).className = 'entry';
-                this.content.style.left = '-50%';
             }
             else {
                 this.content.style.left = '25%';
