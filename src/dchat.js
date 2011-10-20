@@ -282,7 +282,7 @@
         this.friends[this.current].message = this.messageList.innerHTML;
         this.friends[this.current].history = this.historyList.innerHTML;
         this.current = null;
-        this.content.style.left = '-60%';
+        this.content.style.left = '-50%';
     };
 
     DChat.prototype.edit = function (e) {
