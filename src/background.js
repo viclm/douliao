@@ -293,6 +293,9 @@ Mail.prototype.portHandler = function(port) {
                     self.query(msg.people, null, null, msg.offset);
                 }
                 break;
+            case 'fetchMiniblog':
+                self.queryMiniblog(msg.people, msg.offset);
+                break;
             }
         });
 
@@ -533,6 +536,26 @@ Mail.prototype.receive = function () {
     }).request();
 };
 
+Mail.prototype.queryMiniblog = function (people, offset) {
+    var self = this;
+    new Resource({
+        url: 'http://api.douban.com/people/'+people+'/miniblog',
+        method: 'get',
+        data: 'start-index='+(offset+1)+'&max-results=10&alt=json',
+        load: function (data, e) {
+            var i, len, item, miniblog = [];
+            data = JSON.parse(data).entry;
+            for (i = 0, len = data.length ; i < len ; i += 1) {
+                item = {};
+                item.content = data[i].content['$t'];
+                item.timestamp = data[i].published['$t'];
+                miniblog.push(item);
+            }
+            self.port.postMessage({cmd: 'mergeMiniblog', people: people, miniblog: miniblog, final: len < 10});
+        }
+    }).request();
+};
+
 Mail.prototype.notify = function (name, content, response) {
     var config = JSON.parse(localStorage.config), notification, self = this;
 
@@ -588,7 +611,7 @@ Mail.prototype.query = function (people, time, num, offset) {
 Mail.prototype.save = function (people, from, content, timestamp) {
     database.transaction(function (tx) {
         tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now", "localtime"))', [people, from, content]);
-    }, function(){}, function (tx, e) {
+    }, function (tx, e) {
         if (e.code === 4) {
             tx.executeSql('DELETE FROM historyx WHERE timestamp<datetime("now", "localtime", "-1 day")', [])
         }

@@ -7,6 +7,7 @@
         this.messageList = this.content.querySelector('section');
         this.textbox = this.content.querySelector('footer textarea');
         this.historyList = this.content.querySelector('#history');
+        this.miniblogList = this.content.querySelector('#miniblog');
         this.modal = document.querySelector('aside');
 
         this.current = null;
@@ -25,11 +26,13 @@
         document.querySelector('nav input').addEventListener('input', this.proxy(this.search, this), false);
         this.delegate(this.friendsList, '.entry', 'click', this.proxy(this.open, this));
         this.delegate(this.friendsList, 'input', 'click', this.proxy(this.delete, this));
-        this.textbox.parentNode.addEventListener('submit', this.proxy(this.send, this), false);
         this.sidebar.querySelector('footer input').addEventListener('click', this.proxy(this.edit, this), false);
         this.sidebar.querySelector('footer input:last-of-type').addEventListener('click', this.proxy(function () {
             this.modal.style.display = 'block';
         }, this), false);
+
+
+        this.textbox.parentNode.addEventListener('submit', this.proxy(this.send, this), false);
         this.textbox.addEventListener('input', function (e) {
             var diff = this.scrollHeight - this.offsetHeight, r, p;
             if (diff) {
@@ -44,21 +47,39 @@
                 self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
             }
         }, false);
-		this.textbox.addEventListener('keydown', this.proxy(function (e) {
-			if (e.keyCode === 13 && e.ctrlKey) {
+        this.textbox.addEventListener('keydown', this.proxy(function (e) {
+            if (e.keyCode === 13 && e.ctrlKey) {
                 e.preventDefault();
                 this.send(e);
                 return false;
             }
-		}, this), false);
+        }, this), false);
+
         this.delegate(this.content.querySelector('nav'), 'a', 'click', this.proxy(function (e) {
+            if (e.target.className !== 'active') {
+                this.content.querySelector('nav a[class=active]').className = '';
+                e.target.className = 'active';
+                this.historyList.parentNode.style.webkitTransitionProperty = '-webkit-transform';
+                this.content.querySelector('#misc>div').style.webkitTransform = 'translate(-'+ (parseInt(e.target.href.slice(-1), 10)-1) * 50 +'%, 0)';
+                if (e.target.firstChild.nodeValue == '豆瓣说') {
+                    if (this.miniblogList.children.length === 0) {
+                        this.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: 0});
+                    }
+                }
+            }
             e.preventDefault();
             return false;
-        }));
+        }, this));
         this.delegate(this.historyList, 'a.more', 'click', function (e) {
             self.port.postMessage({cmd: 'fetchHistory', people: self.current, offset: self.content.querySelectorAll('#chat div, #history div').length});
             e.preventDefault();
         });
+        this.delegate(this.miniblogList, 'a.more', 'click', function (e) {
+            self.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: self.miniblogList.children.length});
+            e.preventDefault();
+        });
+
+
         this.modal.querySelector('span').addEventListener('click', this.proxy(function () {
             this.modal.style.display = 'none';
         }, this), false);
@@ -122,20 +143,9 @@
     };
 
     DChat.prototype.delegate = function (node, selector, type, handler) {
-        var result = /^([a-z]+)?(\.(?:.+))*$/i.exec(selector), nodeName, className, self = this;
-        nodeName = result[1] ? '^' + result[1] : '^';
-        className = result[2];
-		if (className) {
-			className = '[' + className.replace(/[^.]\./g, '|.') + ']{' + className.match(/\./g).length + '}$';
-		}
-		else {
-			className = '$';
-		}
-        //this.delegate.save || (this.delegate.save = {});
-		node.delegate || (node.delegate = {});
-		node.delegate[selector] = {nodeName: nodeName, className: className, handler: handler, reg: new RegExp(nodeName + className, 'i')};
+        node.delegate || (node.delegate = {});
+        node.delegate[selector] = {handler: handler};
         this.delegate.nodeList || (this.delegate.nodeList = []);
-        //this.delegate.save[selector] = {nodeName: nodeName, className: className, handler: handler};
         if (this.delegate.nodeList.indexOf(node) === -1) {
             node.addEventListener(type, function (e) {
                 var target = e.target, key, tmp;
@@ -215,10 +225,34 @@
                             more.href = '#';
                             more.className = 'more';
                             more.innerHTML = '更多';
-                            self.historyList.insertBefore(more, self.historyList.firstChild);
                         }
+                        self.historyList.insertBefore(more, self.historyList.firstChild);
                     }
                     self.friends[msg.people].gina = true;
+                }
+                break;
+            case 'mergeMiniblog':
+                if (msg.people === self.current) {
+                    var i = 0, len = msg.miniblog.length, more;
+                    for (; i < len ; i += 1) {
+                        self.addMiniblog(msg.miniblog[i].content);
+                    }
+
+                    more = self.miniblogList.querySelector('.more');
+                    if (msg.final) {
+                        if (more) {
+                            self.historyList.removeChild(more);
+                        }
+                    }
+                    else {
+                        if (!more) {
+                            more = document.createElement('a');
+                            more.href = '#';
+                            more.className = 'more';
+                            more.innerHTML = '更多';
+                        }
+                        self.miniblogList.append(more);
+                    }
                 }
                 break;
             }
@@ -250,11 +284,19 @@
         var target = e.target, id = target.id, i, len, self = this;
         if (this.current !== id) {
             if (this.current) {
-                this.friends[this.current].message = this.messageList.innerHTML;
-                this.friends[this.current].history = this.historyList.innerHTML;
+                this.close();
             }
+            
+                this.content.style.left = '25%';
+            
+
+            this.historyList.parentNode.style.webkitTransitionProperty = 'none';
+            this.historyList.parentNode.style.webkitTransform = 'translate(0, 0)';
+            this.content.querySelector('nav a[class=active]').className = '';
+            this.content.querySelector('nav a').className = 'active';
             this.messageList.innerHTML = this.friends[id].message || '';
             this.historyList.innerHTML = this.friends[id].history || '';
+            this.miniblogList.innerHTML = this.friends[id].miniblog || '';
             for (i = 0, len = this.friends[id].unread.length ; i < len ; i += 1) {
                 this.addContent('<img src="' + this.friends[id].unread[i].icon + '"><p>' + this.friends[id].unread[i].content + '</p>', 'left');
             }
@@ -264,12 +306,12 @@
                 chrome.extension.sendRequest({cmd: 'setUnread', unread: id});
             }
 
-            if (this.current) {
+            /*if (this.current) {
                 document.getElementById(this.current).className = 'entry';
             }
             else {
                 this.content.style.left = '25%';
-            }
+            }*/
             target.className = 'entry active';
             this.current = id;
             if (this.friends[id].gina === undefined) {
@@ -285,6 +327,7 @@
         entry.className = 'entry';
         this.friends[this.current].message = this.messageList.innerHTML;
         this.friends[this.current].history = this.historyList.innerHTML;
+        this.friends[this.current].miniblog = this.miniblogList.innerHTML;
         this.current = null;
         this.content.style.left = '-50%';
     };
@@ -325,7 +368,7 @@
         if (entry.id === this.current) {
             delete this.friends[this.current];
             this.current = null;
-            this.content.style.left = '-40%';
+            this.content.style.left = '-50%';
         }
         this.port.postMessage({cmd: 'deleteFriend', people: entry.id});
         this.friendsList.removeChild(entry);
@@ -417,6 +460,14 @@
             scrollHeight += 41;
         }
         this.messageList.scrollTop = scrollHeight;
+        return div;
+    };
+
+    DChat.prototype.addMiniblog = function (html) {
+        var div = document.createElement('div'), scrollHeight = this.miniblogList.scrollHeight;
+        div.innerHTML = html;
+        this.miniblogList.appendChild(div);
+        this.miniblogList.scrollTop = scrollHeight;
         return div;
     };
 
