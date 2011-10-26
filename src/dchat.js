@@ -1,5 +1,10 @@
 (function (window, document, undefined) {
 
+
+})(this, this.document);
+
+(function (window, document, undefined) {
+
     function DChat(args) {
         this.sidebar = document.querySelector('#sidebar');
         this.content = document.querySelector('#content');
@@ -21,6 +26,7 @@
 
         setTimeout(this.proxy(function () {
             this.historyList.style.height = window.innerHeight - 40 - this.content.querySelector('nav').getBoundingClientRect().height + 'px';
+			this.miniblogList.style.height = window.innerHeight - 40 - this.content.querySelector('nav').getBoundingClientRect().height + 'px';
         }, this), 200);
 
         document.querySelector('nav input').addEventListener('input', this.proxy(this.search, this), false);
@@ -75,7 +81,24 @@
             e.preventDefault();
         });
         this.delegate(this.miniblogList, 'a.more', 'click', function (e) {
-            self.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: self.miniblogList.children.length});
+            self.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: self.miniblogList.children.length-1, latest: e.target.timestamp});
+            e.preventDefault();
+        });
+		this.delegate(this.miniblogList, 'div a', 'click', function (e) {
+            window.open(this.href);
+            e.preventDefault();
+			return false;
+        });
+		this.delegate(this.miniblogList, 'img', 'click', function (e) {
+			var width = this.parentNode.getBoundingClientRect().width * 0.8 - 10, img = this;
+			if (this.offsetWidth === 100) {
+				this.style.width = width + 'px';
+				setTimeout(function () {
+				self.once(document.body, 'click', function (e) {
+					img.style.width = '100px';
+				});
+				}, 0);
+			}
             e.preventDefault();
         });
 
@@ -88,9 +111,6 @@
             self.port.postMessage({cmd: 'addAllFriends'});
             self.modal.style.display = 'none';
         }, false);
-        /*this.content.addEventListener( 'webkitTransitionEnd', function (e) {
-            if (self.current) {this.style.left = '25%';}
-        }, false );*/
 
         this.tmpMsg = document.createElement('p');
         this.tmpMsg.className = 'tmpMsg';
@@ -142,6 +162,14 @@
         }
     };
 
+	DChat.prototype.once = function (node, event, fn) {
+		var newFn = function () {
+            node.removeEventListener(event, newFn, false);
+            fn.apply(node, arguments);
+        };
+        node.addEventListener(event, newFn, false);
+	},
+
     DChat.prototype.delegate = function (node, selector, type, handler) {
         node.delegate || (node.delegate = {});
         node.delegate[selector] = {handler: handler};
@@ -161,7 +189,7 @@
                     }
                     target = target.parentNode;
                 }
-                while (target !== this);
+                while (target && target !== this);
             }, false);
             this.delegate.nodeList.push(node);
         }
@@ -233,15 +261,20 @@
                 break;
             case 'mergeMiniblog':
                 if (msg.people === self.current) {
-                    var i = 0, len = msg.miniblog.length, more;
+                    var i = 0, len = msg.miniblog.length, div, image, more;
                     for (; i < len ; i += 1) {
-                        self.addMiniblog(msg.miniblog[i].content);
+                        div = self.addMiniblog(msg.miniblog[i].content, false);
+						if (msg.miniblog[i].photo) {
+							image = document.createElement('img');
+							image.src = msg.miniblog[i].photo;
+							div.appendChild(image);
+						}
                     }
 
                     more = self.miniblogList.querySelector('.more');
                     if (msg.final) {
                         if (more) {
-                            self.historyList.removeChild(more);
+                            self.miniblogList.removeChild(more);
                         }
                     }
                     else {
@@ -251,7 +284,7 @@
                             more.className = 'more';
                             more.innerHTML = '更多';
                         }
-                        self.miniblogList.append(more);
+                        self.miniblogList.appendChild(more);
                     }
                 }
                 break;
@@ -296,7 +329,7 @@
             this.content.querySelector('nav a').className = 'active';
             this.messageList.innerHTML = this.friends[id].message || '';
             this.historyList.innerHTML = this.friends[id].history || '';
-            this.miniblogList.innerHTML = this.friends[id].miniblog || '';
+            this.miniblogList.innerHTML = '';
             for (i = 0, len = this.friends[id].unread.length ; i < len ; i += 1) {
                 this.addContent('<img src="' + this.friends[id].unread[i].icon + '"><p>' + this.friends[id].unread[i].content + '</p>', 'left');
             }
@@ -327,7 +360,7 @@
         entry.className = 'entry';
         this.friends[this.current].message = this.messageList.innerHTML;
         this.friends[this.current].history = this.historyList.innerHTML;
-        this.friends[this.current].miniblog = this.miniblogList.innerHTML;
+        //this.friends[this.current].miniblog = this.miniblogList.innerHTML;
         this.current = null;
         this.content.style.left = '-50%';
     };
@@ -463,10 +496,15 @@
         return div;
     };
 
-    DChat.prototype.addMiniblog = function (html) {
+    DChat.prototype.addMiniblog = function (html, first) {
         var div = document.createElement('div'), scrollHeight = this.miniblogList.scrollHeight;
         div.innerHTML = html;
-        this.miniblogList.appendChild(div);
+		if (first) {
+			this.miniblogList.insertBefore(div, this.miniblogList.firstChild);
+		}
+		else {
+			this.miniblogList.appendChild(div);
+		}
         this.miniblogList.scrollTop = scrollHeight;
         return div;
     };

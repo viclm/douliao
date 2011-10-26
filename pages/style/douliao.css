@@ -57,15 +57,20 @@ display: inline-block; width: 16px; height: 16px; line-height: 12px; font-size: 
 #content footer input[type=submit], aside input[type=submit]{width: 18%; -webkit-box-sizing:border-box; margin: 0; margin-left: 1%; height: 28px;
 background-color: #57A957; background-image: -webkit-linear-gradient(top, #62c462, #57a957); border-color: #57A957 #57A957 #3D773D; color: white;}
 
-#content nav {border-bottom: #BFE7BF 1px solid; margin-bottom: 10px;}
-#content nav a {width: 18%; -webkit-box-sizing:border-box; margin-right: 1%; height: 28px; text-decoration: none; border-style: solid; border-width: 1px 1px 0 1px; border-color: #BFE7BF;
+#content nav {border-bottom: #BFE7BF 1px solid; margin-bottom: 10px; padding: 5px 10px;}
+#content nav a {width: 18%; -webkit-box-sizing:border-box; margin-right: 10px; height: 28px; text-decoration: none; border-style: solid; border-width: 1px 1px 0 1px; border-color: #BFE7BF;
     padding: 5px; color: black;}
 #content nav a.active {background-color: #BFE7BF}
 
-#misc {padding: 10px; overflow: hidden;}
+#misc {padding: 10px 0; overflow: hidden;}
 #misc > div {position: relative; width: 200%; -webkit-transition: -webkit-transform 0.5s}
 #misc section {position: relative; width: 50%; float: left;}
-#misc section>a {text-decoration: none; display: block; background-color: #BFE7BF; text-align: center; line-height: 24px; color: black; margin-bottom: 10px;}
+#misc section > a {text-decoration: none; display: block; background-color: #BFE7BF; text-align: center; line-height: 24px; color: black; margin-bottom: 10px;}
+
+#history, #miniblog {padding: 0 10px;}
+
+#miniblog > div {padding: 5px;}
+#miniblog img {width: 100px; height: auto; display: block; margin-top: 5px; -webkit-transition: width 0.5s, height 0.5s}
 
 aside {z-index: 10; position: fixed; right: 0; width: 500px; text-align: center; -webkit-box-shadow: 0 0 10px #888; background-color: white; display: none;}
 aside h1 {background-color: #0C7823;}

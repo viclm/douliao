@@ -2,7 +2,7 @@
 localStorage.config || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true}));
 var c = JSON.parse(localStorage.config);
 if (c.offline === undefined) {c.offline = true; localStorage.config = JSON.stringify(c)};
-if (c.history === undefined) {c.history = true; localStorage.config = JSON.stringify(c)};
+//if (c.history === undefined) {c.history = true; localStorage.config = JSON.stringify(c)};
 if (c.deleteMails === undefined) {c.deleteMails = false; localStorage.config = JSON.stringify(c)};
 if (c.keyboardFlip === undefined) {c.keyboardFlip = true; localStorage.config = JSON.stringify(c)};
 
@@ -10,38 +10,8 @@ if (!localStorage.friends) {
     localStorage.setItem('friends', '{}');
     chrome.tabs.create({url: '../pages/demo.html'});
 }
-/*
-var database, dbRequest = webkitIndexedDB.open('dchat');
 
-dbRequest.onerror = function(e) {
-    var config = JSON.parse(localStorage.config);
-    config.history = false;
-    localStorage.config = JSON.stringify(config);
-    chrome.extension.sendRequest({cmd: 'disableConfig', config: 'deleteMails'});
-};
-
-dbRequest.onsuccess = function(e) {
-    database = e.target.result;
-    if (database.version != '1.1') {
-        var request = database.setVersion("1.1");
-
-        request.onerror = function (e) {
-            console.log('setVersion error');
-        };
-
-        request.onsuccess = function (e) {
-            var objectStore;
-            try {
-                database.deleteObjectStore('history');
-            }
-            catch (e) {console.log(e)}
-            objectStore = database.createObjectStore('history', {keyPath: 'timestamp'});
-            objectStore.createIndex('people', 'people', {unique: false});
-        };
-    }
-};
-*/
-var database = openDatabase('dchat', '1.0', 'dchat database', 4 * 1024 * 1024);
+var database = openDatabase('dchat', '1.0', 'dchat database', 5 * 1024 * 1024);
 database.transaction(function (tx) {
     tx.executeSql('DROP TABLE IF EXISTS history');
     tx.executeSql('CREATE TABLE IF NOT EXISTS historyx (people text, f text, content text, timestamp text)');
@@ -222,7 +192,7 @@ Mail.prototype.portHandler = function(port) {
                     msg,
                     function (data, e) {
                         port.postMessage({cmd: 'sended', result: true});
-                        JSON.parse(localStorage.config).history && self.save(msg.people, 'me', msg.content, Date());
+                        self.save(msg.people, 'me', msg.content, Date());
                     },
                     function (e) {console.log(e, e.status)
                         if (e.status === 403) {
@@ -289,12 +259,10 @@ Mail.prototype.portHandler = function(port) {
                 localStorage.friends = JSON.stringify(self.friends);
                 break;
             case 'fetchHistory':
-                if (JSON.parse(localStorage.config).history) {
-                    self.query(msg.people, null, null, msg.offset);
-                }
+                self.query(msg.people, null, null, msg.offset);
                 break;
             case 'fetchMiniblog':
-                self.queryMiniblog(msg.people, msg.offset);
+                self.queryMiniblog(msg.people, msg.offset, msg.latest);
                 break;
             }
         });
@@ -485,7 +453,7 @@ Mail.prototype.delete = function (mails) {
     }
 };
 
-Mail.prototype.receive = function () {
+Mail.prototype.receive = function () {console.log(Date())
     var self = this;
     new Resource({
         url: 'http://api.douban.com/doumail/inbox/unread',
@@ -527,7 +495,7 @@ Mail.prototype.receive = function () {
                         }
 
                         self.mails.push(data.id['$t']);
-                        JSON.parse(localStorage.config).history && self.save(response.people, 'ta', str2, response.timestamp);
+                        self.save(response.people, 'ta', str2, response.timestamp);
                         self.notify(response.name + '说: ', response.content, response);
                     }
                 }).request();
@@ -543,15 +511,19 @@ Mail.prototype.queryMiniblog = function (people, offset) {
         method: 'get',
         data: 'start-index='+(offset+1)+'&max-results=10&alt=json',
         load: function (data, e) {
-            var i, len, item, miniblog = [];
-            data = JSON.parse(data).entry;
+            var i, len, item, miniblog = [], photoReg = /photo\/(\d+)/, resReg;
+            data = JSON.parse(data).entry;console.log(data)
             for (i = 0, len = data.length ; i < len ; i += 1) {
                 item = {};
                 item.content = data[i].content['$t'];
                 item.timestamp = data[i].published['$t'];
+				resReg = photoReg.exec(item.content);
+				if (resReg) {
+					item.photo = 'http://img3.douban.com/view/photo/photo/public/p' + resReg[1] + '.jpg';
+				}
                 miniblog.push(item);
             }
-            self.port.postMessage({cmd: 'mergeMiniblog', people: people, miniblog: miniblog, final: len < 10});
+            self.port.postMessage({cmd: 'mergeMiniblog', people: people, miniblog: miniblog, final: len < 10, latest: offset === 0});
         }
     }).request();
 };
