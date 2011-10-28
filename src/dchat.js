@@ -42,14 +42,11 @@
         this.textbox.addEventListener('input', function (e) {
             var diff = this.scrollHeight - this.offsetHeight, r, p;
             if (diff) {
-                r = this.value.match(/\n/g);
-                if (r) {
-                    p = r.length;
-                }
-                else {
-                    p = 0;
-                }
-                this.style.height = 28 + 18 * p + 'px';
+				this.style.height = 'auto';
+				this.style.height = this.scrollHeight + 'px';
+				if (this.value.trim().length === 0) {
+					this.style.height = '28px';
+				}
                 self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
             }
         }, false);

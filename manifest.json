@@ -1,6 +1,6 @@
 {
     "name": "豆瓣聊",
-    "version": "4.0",
+    "version": "4.0.1",
     "description": "豆瓣即时聊天工具",
     "icons": {
         "16": "assets/icon16.png",
