@@ -51,7 +51,7 @@
             }
         }, false);
         this.textbox.addEventListener('keydown', this.proxy(function (e) {
-            if (e.keyCode === 13 && e.ctrlKey) {
+            if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 this.send(e);
                 return false;

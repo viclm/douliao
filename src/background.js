@@ -192,7 +192,7 @@ Mail.prototype.portHandler = function(port) {
                     msg,
                     function (data, e) {
                         port.postMessage({cmd: 'sended', result: true});
-                        self.save(msg.people, 'me', msg.content, Date());
+                        self.save(msg.people, 'me', msg.content, 'now');
                     },
                     function (e) {console.log(e, e.status)
                         if (e.status === 403) {
@@ -582,7 +582,7 @@ Mail.prototype.query = function (people, time, num, offset) {
 
 Mail.prototype.save = function (people, from, content, timestamp) {
     database.transaction(function (tx) {
-        tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime("now", "localtime"))', [people, from, content]);
+        tx.executeSql('INSERT INTO historyx VALUES (?,?,?,datetime(?, "localtime"))', [people, from, content, timestamp]);
     }, function (tx, e) {
         if (e.code === 4) {
             tx.executeSql('DELETE FROM historyx WHERE timestamp<datetime("now", "localtime", "-1 day")', [])
