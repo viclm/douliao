@@ -1,9 +1,26 @@
 (function (window, document, undefined) {
 
+	function extend(childCtor, parentCtor) {
+        function tempCtor() {};
+        tempCtor.prototype = parentCtor.prototype;
+        childCtor.prototype = new tempCtor();
+        childCtor.prototype.$super = parentCtor.prototype;
+        childCtor.prototype.constructor = childCtor;
+    }
+	
 
-})(this, this.document);
+	function DL(args) {
+		this.trigger = null;
 
-(function (window, document, undefined) {
+		this.$super.constructor.call(this, args);
+
+		this.trigger.addEventListener('click', this.proxy(this.show, this), false);
+		this.mask.addEventListener('click', this.proxy(this.hide, this), false);
+	}
+
+	extend(DL, Lightbox);
+
+	
 
     function DChat(args) {
         this.sidebar = document.querySelector('#sidebar');
@@ -14,6 +31,7 @@
         this.historyList = this.content.querySelector('#history');
         this.miniblogList = this.content.querySelector('#miniblog');
         this.modal = document.querySelector('aside');
+        this.modal2 = document.querySelectorAll('aside')[1];
 
         this.current = null;
         this.me = null;
@@ -33,9 +51,6 @@
         this.delegate(this.friendsList, '.entry', 'click', this.proxy(this.open, this));
         this.delegate(this.friendsList, 'input', 'click', this.proxy(this.delete, this));
         this.sidebar.querySelector('footer input').addEventListener('click', this.proxy(this.edit, this), false);
-        this.sidebar.querySelector('footer input:last-of-type').addEventListener('click', this.proxy(function () {
-            this.modal.style.display = 'block';
-        }, this), false);
 
 
         this.textbox.parentNode.addEventListener('submit', this.proxy(this.send, this), false);
@@ -99,12 +114,21 @@
             e.preventDefault();
         });
 
+		new DL({
+			box: self.modal,
+			trigger: self.sidebar.querySelector('footer input:nth-of-type(2)')
+		}).show();
+		new DL({
+			box: self.modal2,
+			trigger: self.sidebar.querySelector('footer input:nth-of-type(3)')
+		});
+
 
         this.modal.querySelector('span').addEventListener('click', this.proxy(function () {
             this.modal.style.display = 'none';
         }, this), false);
         this.modal.querySelector('form').addEventListener('submit', this.proxy(this.add, this), false);
-        this.modal.querySelector('input[type=button]').addEventListener('click', function () {
+        this.modal2.querySelector('input[type=button]').addEventListener('click', function () {
             self.port.postMessage({cmd: 'addAllFriends'});
             self.modal.style.display = 'none';
         }, false);
