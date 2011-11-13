@@ -180,10 +180,6 @@ Mail.prototype.portHandler = function(port) {
         self.timer && clearInterval(self.timer);
         self.receive();
         self.timer = setInterval(self.proxy(self.receive, self), 10000);
-        //if (!self.isUpdateFriends) {
-            //self.isUpdateFriends = true;
-            //self.updateFriends();
-        //}
 
         port.onMessage.addListener(function(msg) {
             switch (msg.cmd) {
@@ -211,7 +207,7 @@ Mail.prototype.portHandler = function(port) {
                         }
                     });
                 break;
-            case 'addFriend':console.log(msg.url)
+            case 'searchFriend':
                 new Resource({
                     url: msg.url.replace('www', 'api').slice(0, -1),
                     method: 'get',
@@ -225,12 +221,8 @@ Mail.prototype.portHandler = function(port) {
                             icon: data['link'][2]['@href'],
                             sign: data['db:signature']['$t']
                         };
-                        if (self.friends[person.people] === undefined) {
-                            self.friends[person.people] = person;
-                            localStorage.friends = JSON.stringify(self.friends);
-                            person.cmd = 'join';
-                            port.postMessage(person);
-                        }
+                        person.cmd = 'search';
+                        port.postMessage(person);
                     }
                 }).request();
                 break;
@@ -251,11 +243,21 @@ Mail.prototype.portHandler = function(port) {
                     }
                 }).request();
                 break;
-            case 'addAllFriends':
+            case 'searchAllFriends':
                 self.addAllFriends(1);
                 break;
+            case 'addFriend':
+                for (var i = 0, len = msg.friends.length ; i < len ; i += 1) {
+                    self.friends[msg.friends[i].people] = msg.friends[i];
+                }
+                localStorage.friends = JSON.stringify(self.friends);
+                break;
             case 'deleteFriend':
-                delete self.friends[msg.people];console.log(self.friends, msg.people)
+                delete self.friends[msg.people];
+                localStorage.friends = JSON.stringify(self.friends);
+                break;
+            case 'deleteAllFriends':
+                self.friends = {};
                 localStorage.friends = JSON.stringify(self.friends);
                 break;
             case 'fetchHistory':
@@ -303,19 +305,7 @@ Mail.prototype.requestHandler = function (request, sender, sendResponse) {
         self.friends[request.people] = request;
         localStorage.friends = JSON.stringify(self.friends);
         break;
-    /*    case 'setUnread':
-        var i = 0;
-        while (i < self.unread.length) {
-            if (self.unread[i].people === request.people) {
-                self.unread.splice(i, 1);
-            }
-            else {
-                i += 1;
-            }
-        }
-        chrome.browserAction.setBadgeText({text: this.unread.length > 0 ? this.unread.length.toString() : ''});
-        break;*/
-    case 'initial':console.log(self.friends)
+    case 'initial':
         self.receive();
         sendResponse({me: self.me, friends: self.friends, current: self.joinInfo, unread: self.unread});
         self.joinInfo = null;
@@ -356,30 +346,25 @@ Mail.prototype.addAllFriends = function (index) {
         method: 'get',
         data: 'alt=json&start-index=' + index + '&max-results=50',
         load: function (data) {
-            var entry = JSON.parse(data).entry, friends = [], person, i = 0, len = entry.length, item;
+            var entry = JSON.parse(data).entry, friends = [], person, i = 0, len = entry.length, item, finish = false;
             if (len === 50) {
                 self.addAllFriends(index + 50);
             }
+            else {
+                finish = true;
+            }
             for (; i < len ; i += 1) {
-                item = entry[i];/*
-                friends.push({
-                people: item['db:uid']['$t'],
-                name: item.title['$t'],
-                icon: item['link'][2]['@href'],
-                sign: item['db:signature']['$t']
-                });*/
+                item = entry[i];
                 person = {
                     people: item['db:uid']['$t'],
                     name: item.title['$t'],
                     icon: item['link'][2]['@href'],
                     sign: item['db:signature']['$t']
                 };
-                self.friends[person.people] = person;
-                localStorage.friends = JSON.stringify(self.friends);
-                person.cmd = 'join';
-                person.active = false;
-                self.port.postMessage(person);
+                friends.push(person);
             }
+
+            self.port.postMessage({cmd: 'searchAll', friends: friends, finish: finish});
         }
     }).request();
 };
@@ -419,7 +404,7 @@ Mail.prototype.send = function (msg, load, error) {
     +'<uri>http://api.douban.com/people/' + msg.people + '</uri>'
         +'</db:entity>'
     +'<content>' + msg.content + '</content>'
-    +'<title>通过豆聊发送的消息</title>'
+    +'<title>通过豆瓣聊发送的消息</title>'
     +(msg.captcha ? ('<db:attribute name="captcha_token">' + msg.captcha.token + '</db:attribute><db:attribute name="captcha_string">' + msg.captcha.string + '</db:attribute>') : '')
     +'</entry>', self;
 
@@ -437,7 +422,7 @@ Mail.prototype.delete = function (mails) {
         var entry = '<?xml version="1.0" encoding="UTF-8"?>'
         +'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:db="http://www.douban.com/xmlns/" xmlns:gd="http://schemas.google.com/g/2005" xmlns:opensearch="http://a9.com/-/spec/opensearchrss/1.0/">', i, len;
 
-            for (i = 0, len = mails.length ; i < len ; i += 1) {
+        for (i = 0, len = mails.length ; i < len ; i += 1) {
             entry += '<entry><id>' + mails[i] + '</id></entry>';
         }
 
@@ -453,7 +438,7 @@ Mail.prototype.delete = function (mails) {
     }
 };
 
-Mail.prototype.receive = function () {console.log(Date())
+Mail.prototype.receive = function () {
     var self = this;
     new Resource({
         url: 'http://api.douban.com/doumail/inbox/unread',

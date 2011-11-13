@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <title>豆瓣聊 - 豆瓣即时聊天工具</title>
-        <link rel="stylesheet" href="style/douliao.css" />
+        <link rel="stylesheet" href="douliao.css" />
     </head>
     <body>
         <div id="sidebar">
@@ -19,6 +19,7 @@
                 <input type="button" value="编辑" />
                 <input type="button" value="添加好友" />
                 <input type="button" value="一键导入" />
+                <input type="button" value="清空好友" />
             </footer>
         </div>
         <div id="content">
@@ -43,31 +44,40 @@
                 </div>
             </div>
         </div>
-        <aside draggable="true">
-            <h1>请输入豆友主页网址来添加好友<span>X</span></h1>
+        <aside>
+            <h1>请输入豆友主页网址来添加好友</h1>
             <div>
             <form action="">
                 <input type="text" placeholder="网址参考格式: http://www.douban.com/people/viclm/"/>
                 <p>网址格式错误</p>
+                <div>
+                    <img src="" />
+                    <span></span>
+                </div>
                 <input type="submit" value="搜索">
+                <input type="button" value="添加为好友" style="display: none" />
             </form>
             </div>
         </aside>
         <aside>
-            <h1>一键导入<span>X</span></h1>
+            <h1>一键导入所有关注的人</h1>
             <div>
-				<p>如果关注的人很多，慎用。</p>
-                <input type="button" value="导入所有关注的人" />
+                <p></p>
+                <input type="submit" value="搜索" />
+            </div>
+        </aside>
+        <aside>
+            <h1>清空好友</h1>
+            <div>
+                <input type="submit" value="确定清空" />
             </div>
         </aside>
     </body>
     <script type="text/javascript">
         setTimeout(function () {
-            var sections = document.querySelectorAll('section'), aside = document.querySelector('aside');
+            var sections = document.querySelectorAll('section');
             sections[0].style.height = innerHeight - 60 - document.querySelector('nav').getBoundingClientRect().height + 'px';
             sections[1].style.height = innerHeight - 10 - document.querySelector('#content footer').getBoundingClientRect().height + 'px';
-            //aside.style.left = (innerWidth - 500) / 2 + 'px';
-            //aside.style.top = (innerHeight - 147) / 2 + 'px';
             document.body.style['background-position'] = (innerWidth*0.7 - 128)/2 + innerWidth*0.3 + 'px ' + (innerHeight - 128)/2 + 'px';
         }, 200);
     </script>

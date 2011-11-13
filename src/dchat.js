@@ -1,26 +1,27 @@
 (function (window, document, undefined) {
 
-	function extend(childCtor, parentCtor) {
+    function extend(childCtor, parentCtor) {
         function tempCtor() {};
         tempCtor.prototype = parentCtor.prototype;
         childCtor.prototype = new tempCtor();
         childCtor.prototype.$super = parentCtor.prototype;
         childCtor.prototype.constructor = childCtor;
     }
-	
 
-	function DL(args) {
-		this.trigger = null;
 
-		this.$super.constructor.call(this, args);
+    function DL(args) {
+        this.trigger = null;
 
-		this.trigger.addEventListener('click', this.proxy(this.show, this), false);
-		this.mask.addEventListener('click', this.proxy(this.hide, this), false);
-	}
+        this.$super.constructor.call(this, args);
 
-	extend(DL, Lightbox);
+        this.ex = false;
 
-	
+        this.trigger.addEventListener('click', this.proxy(this.show, this), false);
+        this.mask.addEventListener('click', this.proxy(this.hide, this), false);
+    }
+
+    extend(DL, Lightbox);
+
 
     function DChat(args) {
         this.sidebar = document.querySelector('#sidebar');
@@ -32,6 +33,7 @@
         this.miniblogList = this.content.querySelector('#miniblog');
         this.modal = document.querySelector('aside');
         this.modal2 = document.querySelectorAll('aside')[1];
+        this.modal3 = document.querySelectorAll('aside')[2];
 
         this.current = null;
         this.me = null;
@@ -57,11 +59,11 @@
         this.textbox.addEventListener('input', function (e) {
             var diff = this.scrollHeight - this.offsetHeight, r, p;
             if (diff) {
-				this.style.height = 'auto';
-				this.style.height = this.scrollHeight + 'px';
-				if (this.value.trim().length === 0) {
-					this.style.height = '28px';
-				}
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+                if (this.value.trim().length === 0) {
+                    this.style.height = '28px';
+                }
                 self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
             }
         }, false);
@@ -96,41 +98,76 @@
             self.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: self.miniblogList.children.length-1, latest: e.target.timestamp});
             e.preventDefault();
         });
-		this.delegate(this.miniblogList, 'div a', 'click', function (e) {
+        this.delegate(this.miniblogList, 'div a', 'click', function (e) {
             window.open(this.href);
             e.preventDefault();
-			return false;
+            return false;
         });
-		this.delegate(this.miniblogList, 'img', 'click', function (e) {
-			var width = this.parentNode.getBoundingClientRect().width * 0.8 - 10, img = this;
-			if (this.offsetWidth === 100) {
-				this.style.width = width + 'px';
-				setTimeout(function () {
-				self.once(document.body, 'click', function (e) {
-					img.style.width = '100px';
-				});
-				}, 0);
-			}
+        this.delegate(this.miniblogList, 'img', 'click', function (e) {
+            var width = this.parentNode.getBoundingClientRect().width * 0.8 - 10, img = this;
+            if (this.offsetWidth === 100) {
+                this.style.width = width + 'px';
+                setTimeout(function () {
+                    self.once(document.body, 'click', function (e) {
+                        img.style.width = '100px';
+                    });
+                }, 0);
+            }
             e.preventDefault();
         });
 
-		new DL({
-			box: self.modal,
-			trigger: self.sidebar.querySelector('footer input:nth-of-type(2)')
-		}).show();
-		new DL({
-			box: self.modal2,
-			trigger: self.sidebar.querySelector('footer input:nth-of-type(3)')
-		});
+        this.modalL = new DL({
+            box: self.modal,
+            trigger: self.sidebar.querySelector('footer input:nth-of-type(2)')
+        });
+        this.modal2L = new DL({
+            box: self.modal2,
+            trigger: self.sidebar.querySelector('footer input:nth-of-type(3)')
+        });
+        this.modal3L = new DL({
+            box: self.modal3,
+            trigger: self.sidebar.querySelector('footer input:nth-of-type(4)')
+        });
 
 
-        this.modal.querySelector('span').addEventListener('click', this.proxy(function () {
-            this.modal.style.display = 'none';
-        }, this), false);
-        this.modal.querySelector('form').addEventListener('submit', this.proxy(this.add, this), false);
-        this.modal2.querySelector('input[type=button]').addEventListener('click', function () {
-            self.port.postMessage({cmd: 'addAllFriends'});
-            self.modal.style.display = 'none';
+        this.modal.querySelector('form').addEventListener('submit', this.proxy(this.addPrompt, this), false);
+        this.modal.querySelector('input[type=button]').addEventListener('click', function () {
+            var msg = self.modal.msg;
+            self.add(msg);
+            self.port.postMessage({cmd: 'addFriend', friends: [msg]});
+
+            self.modal.querySelector('input').value = '';
+            self.modal.querySelector('form div').style.display = 'none';
+            self.modal.querySelector('input[type=submit]').style.display = '';
+            self.modal.querySelector('input[type=button]').style.display = 'none';
+            self.modalL.hide();
+        }, false);
+        this.modal2.querySelector('input').addEventListener('click', function () {
+            var friends = self.modal2.msg;
+            if (friends) {
+                for (var i = 0, len = friends.length ; i < len ; i += 1) {
+                    self.add(friends[i]);
+                }
+                self.port.postMessage({cmd: 'addFriend', friends: friends});
+                self.modal2L.hide();
+                self.modal2.msg = undefined;
+                self.modal2.querySelector('p').style.display = 'none';
+                this.value = '搜索';
+            }
+            else {
+                self.port.postMessage({cmd: 'searchAllFriends'});
+                this.value = '查询中...';
+                this.disabled = true;
+            }
+        }, false);
+        this.modal3.querySelector('input').addEventListener('click', function () {
+            self.modal3L.hide();
+            self.port.postMessage({cmd: 'deleteAllFriends'});
+            if (self.current) {
+                self.current = null;
+                self.content.style.left = '-50%';
+            }
+            self.friendsList.innerHTML = '';
         }, false);
 
         this.tmpMsg = document.createElement('p');
@@ -168,7 +205,7 @@
                 self.open({target: document.getElementById(response.current.people)});
             }
 
-            key = 0;console.log(document.getElementById(response.unread))
+            key = 0;
             while (key < response.unread.length) {
                 delete response.unread[key].cmd;
                 self.receive(response.unread[key]);
@@ -233,17 +270,29 @@
                 delete msg.cmd;
                 self.receive(msg);
                 break;
+            case 'search':
+                var div = self.modal.querySelector('form div');
+                div.querySelector('img').src = msg.icon;
+                div.querySelector('span').innerHTML = msg.name;
+                div.style.display = 'block';
+                self.modal.querySelector('input[type=submit]').style.display = 'none';
+                self.modal.querySelector('input[type=button]').style.display = '';
+                self.modal.msg = msg;
+                break;
+            case 'searchAll':
+                var f = self.modal2.msg || [];
+                f = f.concat(msg.friends);
+                self.modal2.msg = f;
+                if (msg.finish) {
+                    self.modal2.querySelector('p').innerHTML = '共找到'+f.length+'个好友';
+                    self.modal2.querySelector('p').style.display = 'block';
+                    self.modal2.querySelector('input').value = '导入所有关注的人';
+                    self.modal2.querySelector('input').disabled = false;
+                }
+                break;
             case 'join':
                 delete msg.cmd;
-                if (!self.friends[msg.people]) {
-                    var div = document.createElement('div');
-                    div.className = 'entry';
-                    div.id = msg.people;
-                    div.innerHTML = '<input type="button" value="删除" /><div><h2>' + msg.name + '</h2><p> ' + msg.sign + ' </p></div><img src="' + msg.icon + '" />';
-                    self.friendsList.appendChild(div);
-                    msg.unread = [];
-                    self.friends[msg.people] = msg;
-                }
+                self.add(msg);
 
                 if (msg.active !== false) {
                     self.open({target: document.getElementById(msg.people)});
@@ -340,10 +389,8 @@
             if (this.current) {
                 this.close();
             }
-            
-                this.content.style.left = '25%';
-            
 
+            this.content.style.left = '25%';
             this.historyList.parentNode.style.webkitTransitionProperty = 'none';
             this.historyList.parentNode.style.webkitTransform = 'translate(0, 0)';
             this.content.querySelector('nav a[class=active]').className = '';
@@ -360,12 +407,6 @@
                 chrome.extension.sendRequest({cmd: 'setUnread', unread: id});
             }
 
-            /*if (this.current) {
-                document.getElementById(this.current).className = 'entry';
-            }
-            else {
-                this.content.style.left = '25%';
-            }*/
             target.className = 'entry active';
             this.current = id;
             if (this.friends[id].gina === undefined) {
@@ -381,7 +422,6 @@
         entry.className = 'entry';
         this.friends[this.current].message = this.messageList.innerHTML;
         this.friends[this.current].history = this.historyList.innerHTML;
-        //this.friends[this.current].miniblog = this.miniblogList.innerHTML;
         this.current = null;
         this.content.style.left = '-50%';
     };
@@ -402,18 +442,28 @@
         }
     };
 
-    DChat.prototype.add = function (e) {
+    DChat.prototype.addPrompt = function (e) {
         e.preventDefault();
         var reg = /http:\/\/www.douban.com\/people\/[^\/]+\//i, url;
         url = reg.exec(this.modal.querySelector('input').value);
         if (url) {
-            this.port.postMessage({cmd: 'addFriend', url: url[0]});
+            this.port.postMessage({cmd: 'searchFriend', url: url[0]});
             this.modal.querySelector('p').style.display = 'none';
-            this.modal.style.display = 'none';
-            this.modal.querySelector('input').value = '';
         }
         else {
             this.modal.querySelector('p').style.display = 'block';
+        }
+    };
+
+    DChat.prototype.add = function (person) {
+        if (!this.friends[person.people]) {
+            var div = document.createElement('div');
+            div.className = 'entry';
+            div.id = person.people;
+            div.innerHTML = '<input type="button" value="删除" /><div><h2>' + person.name + '</h2><p> ' + person.sign + ' </p></div><img src="' + person.icon + '" />';
+            this.friendsList.appendChild(div);
+            person.unread = [];
+            this.friends[person.people] = person;
         }
     };
 
@@ -469,7 +519,6 @@
     DChat.prototype.receive = function (msg) {console.log(msg, this.friends)
         if (this.current === msg.people) {
             this.addContent('<img src="' + msg.icon + '"><p>' + msg.content + '</p>', 'left');
-            //self.lock(false);
         }
         else if (msg.people in this.friends) {
             if (this.friends[msg.people].unread.length === 0) {
@@ -585,13 +634,6 @@
         str = time.getMonth() + 1 + '月' + time.getDate() + '日 ';
         str += (time.getHours() > 9 ? time.getHours() : '0' + time.getHours()) + ' : ' + (time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes());
         return str;
-    };
-
-    DChat.prototype.lock = function (status) {
-        this.textbox.disabled = status;
-        this.textbox.style.backgroundColor = status ? '#ddd' : '#fff';
-        this.textbox.value = status ? '双击鼠标来解锁' : '';
-        this.friends[this.current].isLock = status;
     };
 
     new DChat();

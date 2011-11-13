@@ -74,12 +74,13 @@ background-color: #57A957; background-image: -webkit-linear-gradient(top, #62c46
 
 aside {z-index: 10; position: fixed; width: 500px; text-align: center;background-color: white; display: none;}
 aside h1 {background-color: #0C7823;}
-aside span {position: absolute; right: 20px; cursor: pointer}
-aside div {border: 1px solid #bfbfbf; border-top: none; padding: 20px;}
-aside input[type=text] {width: 100%; display: block; margin-bottom: 20px;}
-aside input[type=submit]{margin-left: 0; width: auto;}
+aside span {margin-left: 10px; position: relative; top: -10px;}
+aside div {border: 1px solid #bfbfbf; padding: 10px;}
+aside div  div { margin-bottom: 10px; display: none;}
+aside input[type=text] {width: 100%; display: block; margin-bottom: 10px;}
+aside input[type=submit]{margin-left: 0; width: auto; padding: 0 3em;}
 aside input[type=button] {margin-left: 5px; width: auto; height: 28px;}
-aside p {color: red; margin: -10px 0 10px 0; display: none;}
+aside p {color: red; margin: 0 0 10px 0; display: none;}
 
 .mask {z-index: 9; background: -webkit-radial-gradient(rgba(127, 127, 127, 0.5), rgba(127, 127, 127, 0.5) 35%, rgba(0, 0, 0, 0.7))}
 [draggable] {cursor: move;}
