@@ -71,6 +71,8 @@
             if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 this.send(e);
+                this.textbox.style.height = '28px';
+                self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
                 return false;
             }
         }, this), false);

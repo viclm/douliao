@@ -446,10 +446,10 @@ Mail.prototype.receive = function () {
         data: 'start-index=1&alt=json',
         load: function (data, e) {
             var i, len, key, people, mails = [];
-            data = JSON.parse(data).entry;if (data.length > 1) {console.log(data.length)}
-            for (i = 0, len = data.length ; i < len ; i += 1) {
+            data = JSON.parse(data).entry;
+            if (data.length) {
                 new Resource({
-                    url: data[i].id['$t'],
+                    url: data[data.length - 1].id['$t'],
                     method: 'get',
                     data: 'alt=json',
                     load: function (data) {
@@ -473,7 +473,8 @@ Mail.prototype.receive = function () {
                         else {
                             str2 = str1;
                         }
-                        response.content = str2;console.log(str1, '-------------------------------------------', str2)
+                        response.content = str2;
+                        console.log(str1)
 
                         if (self.port) {
                             self.port.postMessage(response);
@@ -502,10 +503,10 @@ Mail.prototype.queryMiniblog = function (people, offset) {
                 item = {};
                 item.content = data[i].content['$t'];
                 item.timestamp = data[i].published['$t'];
-				resReg = photoReg.exec(item.content);
-				if (resReg) {
-					item.photo = 'http://img3.douban.com/view/photo/photo/public/p' + resReg[1] + '.jpg';
-				}
+                resReg = photoReg.exec(item.content);
+                if (resReg) {
+                    item.photo = 'http://img3.douban.com/view/photo/photo/public/p' + resReg[1] + '.jpg';
+                }
                 miniblog.push(item);
             }
             self.port.postMessage({cmd: 'mergeMiniblog', people: people, miniblog: miniblog, final: len < 10, latest: offset === 0});
