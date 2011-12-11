@@ -101,8 +101,8 @@ function Mail(args) {
     this.people = {};
     this.friends = JSON.parse(localStorage.friends);
     this.isUpdateFriends = false;
-    this.filterRegTest = /:[\r\n]+\|/m;
-    this.filterRegFront = /^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
+    this.filterRegTest = /:\s\|/m;
+    this.filterRegFront = /:\s\|\s\S+([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
     this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
 
     this.timer = null;
@@ -473,7 +473,7 @@ Mail.prototype.receive = function () {
                         else {
                             str2 = str1;
                         }
-                        response.content = str2;
+                        response.content = str2.trim();
                         console.log(str1)
 
                         if (self.port) {
@@ -593,21 +593,3 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
         }
     }
 });
-
-
-/*
-*
-*
-    "content_scripts": [
-        {
-            "matches": ["http://www.douban.com/people/*"],
-            "js": ["src/contentscript.js"]
-        },
-        {
-            "matches": ["http://www.douban.com/group/*"],
-            "js": ["src/keyboardFlip.js"]
-        }
-    ],
-*
-*
-* */
