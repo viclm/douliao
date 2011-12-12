@@ -1,4 +1,3 @@
-'use strict';
 localStorage.config || (localStorage.config = JSON.stringify({soundRemind: true, popupRemind: true}));
 var c = JSON.parse(localStorage.config);
 if (c.offline === undefined) {c.offline = true; localStorage.config = JSON.stringify(c)};
@@ -101,9 +100,9 @@ function Mail(args) {
     this.people = {};
     this.friends = JSON.parse(localStorage.friends);
     this.isUpdateFriends = false;
-    this.filterRegTest = /:\s\|/m;
-    this.filterRegFront = /:\s\|\s\S+([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
-    this.filterRegBack = /^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
+    this.filterRegTest = /:\s+?\|/m;
+    this.filterRegFront = /:\s+?\|\s\S+([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
+    this.filterRegBack = /^([\s\S]+)[^\r\n]+:\s+?\|/m///^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
 
     this.timer = null;
     this.port = null;
@@ -265,6 +264,9 @@ Mail.prototype.portHandler = function(port) {
                 break;
             case 'fetchMiniblog':
                 self.queryMiniblog(msg.people, msg.offset, msg.latest);
+                break;
+            case 'fetchProfile':
+                self.queryProfile(msg.people);
                 break;
             }
         });
@@ -461,11 +463,11 @@ Mail.prototype.receive = function () {
                         response.icon = data.author.link[2] && data.author.link[2]['@href'];
                         response.timestamp = data.published['$t'];
                         str1 = data.content['$t'].trim();
-                        if (self.filterRegTest.test(str1)) {
+                        if (self.filterRegTest.test(str1)) {console.log(1)
                             str2 = self.filterRegFront.exec(str1)[1];
-                            if (typeof str2 === 'undefined') {
+                            if (typeof str2 === 'undefined') {console.log(2)
                                 str2 = self.filterRegBack.exec(str1)[1];
-                                if (typeof str2 === 'undefined') {
+                                if (typeof str2 === 'undefined') {console.log(3)
                                     str2 = '';
                                 }
                             }
@@ -490,6 +492,35 @@ Mail.prototype.receive = function () {
     }).request();
 };
 
+Mail.prototype.queryProfile = function (people) {
+    var self = this;
+    new Resource({
+        url: 'http://api.douban.com/people/'+people,
+        method: 'get',
+        data: 'alt=json',
+        load: function (data, e) {
+            data = JSON.parse(data);
+            var profile = {
+                people: people,
+                name: data.title.$t,
+                icon: data.link[2]['@href'],
+                sign: data['db:signature'].$t,
+                link: data.link[1]['@href'],
+                location: data['db:location'].$t,
+                content: data.content.$t
+            };
+            self.port.postMessage({cmd: 'mergeProfile', people: people, profile: profile});
+            self.friends[people] = {
+                id: people,
+                name: profile.name,
+                icon: profile.icon,
+                sign: profile.sign
+            };
+            localStorage.friends = JSON.stringify(self.friends);
+        }
+    }).request();
+};
+
 Mail.prototype.queryMiniblog = function (people, offset) {
     var self = this;
     new Resource({
@@ -498,7 +529,7 @@ Mail.prototype.queryMiniblog = function (people, offset) {
         data: 'start-index='+(offset+1)+'&max-results=10&alt=json',
         load: function (data, e) {
             var i, len, item, miniblog = [], photoReg = /photo\/(\d+)/, resReg;
-            data = JSON.parse(data).entry;console.log(data)
+            data = JSON.parse(data).entry;
             for (i = 0, len = data.length ; i < len ; i += 1) {
                 item = {};
                 item.content = data[i].content['$t'];

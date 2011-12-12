@@ -1,4 +1,4 @@
-var dom = {
+var Sherry = {
 
     extend: function (childCtor, parentCtor) {
         var fnTest = /\bsuperclass\b/, parent = parentCtor.prototype
@@ -23,11 +23,20 @@ var dom = {
         childCtor.prototype = new tempCtor();
         childCtor.prototype.superclass = parentCtor.prototype;
         childCtor.prototype.constructor = childCtor;
-    }
+    },
 
     proxy: function (fn, obj) {
         return function () {
             return fn.apply(obj, arguments);
         }
+    },
+
+    clone: function (destination, source) {
+        for (var key in source) {
+            destination[key] = source[key];
+        }
+        return destination;
     }
-}
+};
+
+var S = Sherry;
