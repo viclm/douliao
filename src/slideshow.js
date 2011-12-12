@@ -1,7 +1,7 @@
 /**
 * hg.Slideshow is abstract class for slideshow, inherit it if you want a slideshow on webpage
 *
-* @author nhnst liuming
+* @author viclm
 * @version 20110623.4
 * @constructs
 * @requires jQuery
@@ -11,13 +11,14 @@
 * @param {Integer} [step=1] The step of slideshow moves
 */
 function Slideshow(args) {
-    var args = arguments[0] || {};
 
-    this.gap = args.gap || 5000;
-    this.length = args.length;
-    this.loop = !!args.loop;
-    this.step = args.step || 1;
-    this.callback = args.callback;
+    this.gap = 5000;
+    this.length = null;
+    this.loop = null;
+    this.step = 1;
+    this.callback = null;
+
+    Sherry.clone(this, arguments[0] || {});
 
     this.count = 1;
     this.timer = null;

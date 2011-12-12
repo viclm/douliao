@@ -1,26 +1,62 @@
 (function (window, document, undefined) {
 
-    function extend(childCtor, parentCtor) {
-        function tempCtor() {};
-        tempCtor.prototype = parentCtor.prototype;
-        childCtor.prototype = new tempCtor();
-        childCtor.prototype.$super = parentCtor.prototype;
-        childCtor.prototype.constructor = childCtor;
-    }
-
 
     function DL(args) {
         this.trigger = null;
 
-        this.$super.constructor.call(this, args);
+        this.superclass.constructor.call(this, args);
 
         this.ex = false;
 
-        this.trigger.addEventListener('click', this.proxy(this.show, this), false);
-        this.mask.addEventListener('click', this.proxy(this.hide, this), false);
+        this.trigger.addEventListener('click', S.proxy(this.show, this), false);
+        this.mask.addEventListener('click', S.proxy(this.hide, this), false);
     }
 
-    extend(DL, Lightbox);
+    S.extend(DL, Lightbox);
+
+
+    function Tabs(args) {
+
+        this.trigger = null;
+        this.slide = null;
+
+        this.superclass.constructor.call(this, args);
+
+        this.trigger = document.querySelectorAll(this.trigger);
+        this.slide = document.querySelector(this.slide);
+
+        var self = this;
+
+        for (var i = 0 ; i < this.trigger.length ; i += 1) {
+            this.trigger[i].dataset.index = i;
+            this.trigger[i].addEventListener('click', function (e) {
+                self.moveTo(Number(this.dataset.index)+1);
+                e.preventDefault();
+            }, false);
+        }
+    }
+
+    S.extend(Tabs, Slideshow);
+
+    Tabs.prototype.reset = function () {
+        this.trigger[this.count-1].className = '';
+        this.trigger[0].className = 'active';
+        this.slide.style.webkitTransitionProperty = 'none';
+        this.slide.style.webkitTransform = 'translate(0, 0)';
+        this.superclass.reset.call(this);
+    }
+
+    Tabs.prototype.moveTo = function (index) {
+        var bak = this.count,
+            res = this.superclass.moveTo.call(this, index);
+
+        if (res > -1) {
+            this.trigger[bak-1].className = '';
+            this.trigger[res-1].className = 'active';
+            this.slide.style.webkitTransitionProperty = '-webkit-transform';
+            this.slide.style.webkitTransform = 'translate(-'+ (res-1) * 100 / this.length +'%, 0)';
+        }
+    }
 
 
     function DChat(args) {
@@ -31,6 +67,7 @@
         this.textbox = this.content.querySelector('footer textarea');
         this.historyList = this.content.querySelector('#history');
         this.miniblogList = this.content.querySelector('#miniblog');
+        this.profile = this.content.querySelector('#profile');
         this.modal = document.querySelector('aside');
         this.modal2 = document.querySelectorAll('aside')[1];
         this.modal3 = document.querySelectorAll('aside')[2];
@@ -44,18 +81,18 @@
 
         var self = this;
 
-        setTimeout(this.proxy(function () {
+        setTimeout(S.proxy(function () {
             this.historyList.style.height = window.innerHeight - 40 - this.content.querySelector('nav').getBoundingClientRect().height + 'px';
 			this.miniblogList.style.height = window.innerHeight - 40 - this.content.querySelector('nav').getBoundingClientRect().height + 'px';
         }, this), 200);
 
-        document.querySelector('nav input').addEventListener('input', this.proxy(this.search, this), false);
-        this.delegate(this.friendsList, '.entry', 'click', this.proxy(this.open, this));
-        this.delegate(this.friendsList, 'input', 'click', this.proxy(this.delete, this));
-        this.sidebar.querySelector('footer input').addEventListener('click', this.proxy(this.edit, this), false);
+        document.querySelector('nav input').addEventListener('input', S.proxy(this.search, this), false);
+        this.delegate(this.friendsList, '.entry', 'click', S.proxy(this.open, this));
+        this.delegate(this.friendsList, 'input', 'click', S.proxy(this.delete, this));
+        this.sidebar.querySelector('footer input').addEventListener('click', S.proxy(this.edit, this), false);
 
 
-        this.textbox.parentNode.addEventListener('submit', this.proxy(this.send, this), false);
+        this.textbox.parentNode.addEventListener('submit', S.proxy(this.send, this), false);
         this.textbox.addEventListener('input', function (e) {
             var diff = this.scrollHeight - this.offsetHeight, r, p;
             if (diff) {
@@ -67,7 +104,7 @@
                 self.messageList.style.height = innerHeight - 10 - self.content.querySelector('footer').getBoundingClientRect().height + 'px';
             }
         }, false);
-        this.textbox.addEventListener('keydown', this.proxy(function (e) {
+        this.textbox.addEventListener('keydown', S.proxy(function (e) {
             if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 this.send(e);
@@ -77,21 +114,23 @@
             }
         }, this), false);
 
-        this.delegate(this.content.querySelector('nav'), 'a', 'click', this.proxy(function (e) {
-            if (e.target.className !== 'active') {
-                this.content.querySelector('nav a[class=active]').className = '';
-                e.target.className = 'active';
-                this.historyList.parentNode.style.webkitTransitionProperty = '-webkit-transform';
-                this.content.querySelector('#misc>div').style.webkitTransform = 'translate(-'+ (parseInt(e.target.href.slice(-1), 10)-1) * 50 +'%, 0)';
-                if (e.target.firstChild.nodeValue == '豆瓣说') {
-                    if (this.miniblogList.children.length === 0) {
-                        this.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: 0});
+        this.tabs = new Tabs({
+            trigger: '#misc nav a',
+            slide: '#misc>div',
+            length: 3,
+            callback: function () {
+                if (this.count === 2) {
+                    if (this.slide.querySelector('section:nth-of-type('+this.count+')').children.length === 0) {
+                        self.port.postMessage({cmd: 'fetchMiniblog', people: self.current, offset: 0});
+                    }
+                }
+                else if (this.count === 3) {
+                    if (this.slide.querySelector('section:nth-of-type('+this.count+')').children.length === 0) {
+                        self.port.postMessage({cmd: 'fetchProfile', people: self.current});
                     }
                 }
             }
-            e.preventDefault();
-            return false;
-        }, this));
+        })
         this.delegate(this.historyList, 'a.more', 'click', function (e) {
             self.port.postMessage({cmd: 'fetchHistory', people: self.current, offset: self.content.querySelectorAll('#chat div, #history div').length});
             e.preventDefault();
@@ -132,7 +171,7 @@
         });
 
 
-        this.modal.querySelector('form').addEventListener('submit', this.proxy(this.addPrompt, this), false);
+        this.modal.querySelector('form').addEventListener('submit', S.proxy(this.addPrompt, this), false);
         this.modal.querySelector('input[type=button]').addEventListener('click', function () {
             var msg = self.modal.msg;
             self.add(msg);
@@ -215,12 +254,6 @@
             }
         });
     }
-
-    DChat.prototype.proxy = function (fn, obj) {
-        return function () {
-            return fn.apply(obj, arguments);
-        }
-    };
 
 	DChat.prototype.once = function (node, event, fn) {
 		var newFn = function () {
@@ -360,6 +393,11 @@
                     }
                 }
                 break;
+            case 'mergeProfile':
+                if (msg.people === self.current) {
+                    self.profileTmpl(msg.profile);
+                }
+                break;
             }
         });
     };
@@ -393,13 +431,11 @@
             }
 
             this.content.style.left = '25%';
-            this.historyList.parentNode.style.webkitTransitionProperty = 'none';
-            this.historyList.parentNode.style.webkitTransform = 'translate(0, 0)';
-            this.content.querySelector('nav a[class=active]').className = '';
-            this.content.querySelector('nav a').className = 'active';
+            this.tabs.reset();
             this.messageList.innerHTML = this.friends[id].message || '';
             this.historyList.innerHTML = this.friends[id].history || '';
             this.miniblogList.innerHTML = '';
+            this.profile.innerHTML = '';
             for (i = 0, len = this.friends[id].unread.length ; i < len ; i += 1) {
                 this.addContent('<img src="' + this.friends[id].unread[i].icon + '"><p>' + this.friends[id].unread[i].content + '</p>', 'left');
             }
@@ -413,7 +449,7 @@
             this.current = id;
             if (this.friends[id].gina === undefined) {
                 this.port.postMessage({cmd: 'fetchHistory', people: id, offset: this.messageList.querySelectorAll('div').length});
-                this.port.postMessage({cmd: 'updateFriend', people: id});
+                //this.port.postMessage({cmd: 'updateFriend', people: id});
                 this.friends[id].oldIcon = this.greyscale(document.getElementById(id).querySelector('img'));
             }
         }
@@ -636,6 +672,20 @@
         str = time.getMonth() + 1 + '月' + time.getDate() + '日 ';
         str += (time.getHours() > 9 ? time.getHours() : '0' + time.getHours()) + ' : ' + (time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes());
         return str;
+    };
+
+    DChat.prototype.profileTmpl = function (data) {
+        var html = '<img src="'+data.icon.replace('icon/u', 'icon/ul')+'" />'
+            +'<h3><a target="_blank" href="'+data.link+'">'+data.name+'</a></h3>'
+            +'<p>常居:&nbsp;'+data.location+'</p>'
+            +'<p>'+data.content.replace(/\n/mg, '<br>')+'</p>';
+
+        var entry = document.getElementById(data.people);
+        entry.querySelector('h2').innerHTML = data.name;
+        entry.querySelector('p').innerHTML = data.sign;
+        entry.querySelector('img').src = data.icon;
+
+        this.profile.innerHTML = html;
     };
 
     new DChat();

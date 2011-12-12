@@ -63,14 +63,16 @@ background-color: #57A957; background-image: -webkit-linear-gradient(top, #62c46
 #content nav a.active {background-color: #BFE7BF}
 
 #misc {padding: 10px 0; overflow: hidden;}
-#misc > div {position: relative; width: 200%; -webkit-transition: -webkit-transform 0.5s}
-#misc section {position: relative; width: 50%; float: left;}
+#misc > div {position: relative; width: 300%; -webkit-transition: -webkit-transform 0.5s}
+#misc section {position: relative; width: 33.33%; float: left; padding: 0 10px;}
 #misc section > a {text-decoration: none; display: block; background-color: #BFE7BF; text-align: center; line-height: 24px; color: black; margin-bottom: 10px;}
-
-#history, #miniblog {padding: 0 10px;}
 
 #miniblog > div {padding: 5px;}
 #miniblog img {width: 100px; height: auto; display: block; margin-top: 5px; -webkit-transition: width 0.5s, height 0.5s}
+
+#profile img {width: auto; height: auto;}
+#profile h3, #profile p {margin-top: 10px;}
+#profile h3 {font-size: 1.5em}
 
 aside {z-index: 10; position: fixed; width: 500px; text-align: center;background-color: white; display: none;}
 aside h1 {background-color: #0C7823;}
