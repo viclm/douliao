@@ -506,7 +506,7 @@ Mail.prototype.queryProfile = function (people) {
                 icon: data.link[2]['@href'],
                 sign: data['db:signature'].$t,
                 link: data.link[1]['@href'],
-                location: data['db:location'].$t,
+                location: data['db:location'] ? data['db:location'].$t : '火星',
                 content: data.content.$t
             };
             self.port.postMessage({cmd: 'mergeProfile', people: people, profile: profile});
