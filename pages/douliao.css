@@ -48,7 +48,7 @@ display: inline-block; width: 16px; height: 16px; line-height: 12px; font-size: 
 .tmpMsg {-webkit-backface-visibility: hidden; -webkit-transition: all 1s; position: fixed; display: none; box-sizing: border-box;}
 .left p {background: -webkit-linear-gradient(top, #62c462, #57a957); color: #fff;}
 .old p {background: -webkit-linear-gradient(#ffffff, #ffffff 25%, #e6e6e6); color: #333;}
-.time p {width: 100%; text-align: center; padding: 10px 0; max-width: 100%; border:none; background: none; color: grey}
+.time p {width: 100%; text-align: center; padding: 5px 0; max-width: 100%; border:none; background: none; color: grey}
 .captcha img{width: 213px; height: 34px;}
 
 #content footer {background: none; margin: 0 5%; height: auto; position: relative; padding-bottom: 7px; }

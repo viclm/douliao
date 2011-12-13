@@ -135,7 +135,7 @@
             }
         })
         this.delegate(this.historyList, 'a.more', 'click', function (e) {
-            self.port.postMessage({cmd: 'fetchHistory', people: self.current, offset: self.content.querySelectorAll('#chat div, #history div').length});
+            self.port.postMessage({cmd: 'fetchHistory', people: self.current, offset: self.content.querySelectorAll('#chat div:not(.time), #history div:not(.time)').length});
             e.preventDefault();
         });
         this.delegate(this.miniblogList, 'a.more', 'click', function (e) {
@@ -338,14 +338,19 @@
                 break;
             case 'mergeHistory':
                 if (msg.people === self.current) {
-                    var i = 0, len = msg.history.length, item, image, more;
+                    var i = 0, len = msg.history.length, item, image, more, timeCurrent, timeLast = 0;
                     for (; i < len ; i += 1) {
                         item = msg.history[i];
+                        timeCurrent = new Date(item.timestamp).getDate();
+                        if (timeCurrent !== timeLast) {
+                            self.addContent('<p>' + self.strftime(item.timestamp) + '</p>', 'time', true);
+                        }
+                        timeLast = timeCurrent;
                         if (item.f === 'ta') {
-                            self.addContent('<img src="' + self.friends[msg.people].oldIcon + '"><p>' + item.content + '  ' + self.strftime(item.timestamp) + '</p>', 'left old', true);
+                            self.addContent('<img src="' + self.friends[msg.people].oldIcon + '"><p>' + item.content + '</p>', 'left old', true);
                         }
                         else {
-                            self.addContent('<img src="' + self.me.oldIcon + '"><p>' + item.content + '  ' + self.strftime(item.timestamp) + '</p>', 'right old', true);
+                            self.addContent('<img src="' + self.me.oldIcon + '"><p>' + item.content + '</p>', 'right old', true);
                         }
                     }
 
