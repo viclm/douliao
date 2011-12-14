@@ -101,8 +101,8 @@ function Mail(args) {
     this.friends = JSON.parse(localStorage.friends);
     this.isUpdateFriends = false;
     this.filterRegTest = /:\s+?\|/m;
-    this.filterRegFront = /:\s+?\|\s\S+([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
-    this.filterRegBack = /^([\s\S]+)[^\r\n]+:\s+?\|/m///^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
+    this.filterRegFront = /:\s+?\|\s+?\S+([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
+    this.filterRegBack = /^([\s\S]+)\n[^\r\n]+?:\s+?\|/m///^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
 
     this.timer = null;
     this.port = null;
@@ -463,11 +463,18 @@ Mail.prototype.receive = function () {
                         response.icon = data.author.link[2] && data.author.link[2]['@href'];
                         response.timestamp = data.published['$t'];
                         str1 = data.content['$t'].trim();
+                        console.log(str1)
                         if (self.filterRegTest.test(str1)) {console.log(1)
-                            str2 = self.filterRegFront.exec(str1)[1];
-                            if (typeof str2 === 'undefined') {console.log(2)
-                                str2 = self.filterRegBack.exec(str1)[1];
-                                if (typeof str2 === 'undefined') {console.log(3)
+                            str2 = self.filterRegFront.exec(str1);
+                            if (str2) {
+                                str2 = str2[1];
+                            }
+                            else {console.log(2)
+                                str2 = self.filterRegBack.exec(str1);
+                                if (str2) {
+                                    str2 = str2[1];
+                                }
+                                else {console.log(3)
                                     str2 = '';
                                 }
                             }
@@ -476,7 +483,6 @@ Mail.prototype.receive = function () {
                             str2 = str1;
                         }
                         response.content = str2.trim();
-                        console.log(str1)
 
                         if (self.port) {
                             self.port.postMessage(response);
