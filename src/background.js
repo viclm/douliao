@@ -101,8 +101,9 @@ function Mail(args) {
     this.friends = JSON.parse(localStorage.friends);
     this.isUpdateFriends = false;
     this.filterRegTest = /:\s+?\|/m;
-    this.filterRegFront = /:\s+?\|\s+?\S+([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
+    this.filterRegFront = /:\s+?\|\s+?\S+\s{2,}([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
     this.filterRegBack = /^([\s\S]+)\n[^\r\n]+?:\s+?\|/m///^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
+    this.filterReg = /[^\r\n]+?:\s+?\|\s\s[\s\S]+?\s{2,}/m
 
     this.timer = null;
     this.port = null;
@@ -464,7 +465,7 @@ Mail.prototype.receive = function () {
                         response.timestamp = data.published['$t'];
                         str1 = data.content['$t'].trim();
                         console.log(str1)
-                        if (self.filterRegTest.test(str1)) {console.log(1)
+                        /*if (self.filterRegTest.test(str1)) {console.log(1)
                             str2 = self.filterRegFront.exec(str1);
                             if (str2) {
                                 str2 = str2[1];
@@ -481,8 +482,8 @@ Mail.prototype.receive = function () {
                         }
                         else {
                             str2 = str1;
-                        }
-                        response.content = str2.trim();
+                        }*/
+                        response.content = str2.replace(this.filterReg, '').trim();
 
                         if (self.port) {
                             self.port.postMessage(response);
