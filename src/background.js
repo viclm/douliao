@@ -483,7 +483,7 @@ Mail.prototype.receive = function () {
                         else {
                             str2 = str1;
                         }*/
-                        response.content = str2.replace(this.filterReg, '').trim();
+                        response.content = str1.replace(this.filterReg, '').trim();
 
                         if (self.port) {
                             self.port.postMessage(response);
