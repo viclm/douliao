@@ -103,7 +103,7 @@ function Mail(args) {
     this.filterRegTest = /:\s+?\|/m;
     this.filterRegFront = /:\s+?\|\s+?\S+\s{2,}([\s\S]+)$/m///^([\s\S]+?[\r\n])?[^\r\n]+?:[\r\n]+\|/m;
     this.filterRegBack = /^([\s\S]+)\n[^\r\n]+?:\s+?\|/m///^[\s\S]+[\r\n]\|.+?[\r\n]+([\s\S]+)$/m;
-    this.filterReg = /[^\r\n]+?:\s+?\|\s\s[\s\S]+?\s{2,}/m
+    this.filterReg = /[^\r\n]+?:\s+?(?:|[^\r\n]+)+/m
 
     this.timer = null;
     this.port = null;
@@ -483,7 +483,7 @@ Mail.prototype.receive = function () {
                         else {
                             str2 = str1;
                         }*/
-                        response.content = str1.replace(this.filterReg, '').trim();
+                        response.content = str1.replace(/[^\r\n]+?:[\s\r\n]+?(?:|[^\r\n]+)+/m, '').trim();
 
                         if (self.port) {
                             self.port.postMessage(response);
