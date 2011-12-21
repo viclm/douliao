@@ -483,14 +483,14 @@ Mail.prototype.receive = function () {
                         else {
                             str2 = str1;
                         }*/
-                        response.content = str1.replace(/[^\r\n]+?:[\s\r\n]+?(?:|[^\r\n]+)+/m, '').trim();
+                        response.content = str1.replace(/[^\r\n]+:\s+?(?:\|[^\r\n]+[\r\n]+?)+/m, '').trim();
 
                         if (self.port) {
                             self.port.postMessage(response);
                         }
 
                         self.mails.push(data.id['$t']);
-                        self.save(response.people, 'ta', str2, response.timestamp);
+                        self.save(response.people, 'ta', response.content, response.timestamp);
                         self.notify(response.name + '说: ', response.content, response);
                     }
                 }).request();
