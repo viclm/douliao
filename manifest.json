@@ -16,8 +16,9 @@
     },
     "content_scripts": [
         {
-            "matches": ["http://www.douban.com/people/*"],
-            "js": ["src/contentscript.js"]
+            "matches": ["http://www.douban.com/*"],
+            "js": ["src/dchat.js"],
+            "css": ["pages/style/ui.css"]
         }
     ],
     "permissions": [

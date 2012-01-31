@@ -93,6 +93,9 @@ function Mail(args) {
     this.sound = document.getElementById('alert');
     this.unread = [];
     this.history = {};
+    this.online = 0;
+    this.people = {};
+    this.port = [];
 
     this.popInfo = null;
 
@@ -151,23 +154,22 @@ Mail.prototype.proxy = function (fn, obj) {
 Mail.prototype.portHandler = function(port) {
 	var self = this;
     if (port.name === 'dchat') {
+        self.port[port.tab.id] = port;console.log(self.port)
         port.onMessage.addListener(function(msg) {
             switch (msg.cmd) {
             case 'send':
                 self.send(
                     msg,
                     function (data, e) {
-                        port.postMessage({cmd: 'sended', result: true});
                         self.peopleInfo[msg.people].history.push({name: '我', content: msg.content});
                     },
-                    function (e) {console.log(e, e.status)
+                    function (e) {console.log(e)
                         if (e.status === 403) {
                             port.postMessage({
-                                cmd: 'sended',
-                                result: false,
-                                msg:{
+                                cmd: 'sendError',
+                                content:{
                                     content: msg.content,
-                                    people: msg.people,
+                                    uid: msg.uid,
                                     captcha: {
                                         token: /=(.+?)&amp;/.exec(e.responseText)[1],
                                         string: /captcha_url=(.+)$/.exec(e.responseText)[1]
@@ -262,6 +264,16 @@ Mail.prototype.portHandler = function(port) {
 Mail.prototype.requestHandler = function (request, sender, sendResponse) {
     var self = this;
     switch (request.cmd) {
+    case 'chatStart':
+        if (self.people[request.content.uid]) {
+            sendResponse({cmd: 'chatRecovery'});
+        }
+        else {
+            self.people[request.content.uid] = request.content;
+            self.online += 1;
+            sendResponse({cmd: 'chatInit'});
+        }
+        break;
     case 'createWindow':
         if (self.peopleInfo[request.people]) {
             chrome.tabs.update(self.peopleInfo[request.people].port.tab.id, {selected: true});
@@ -366,7 +378,7 @@ Mail.prototype.send = function (msg, load, error) {
     var entry = '<?xml version="1.0" encoding="UTF-8"?>'
     +'<entry xmlns="http://www.w3.org/2005/Atom" xmlns:db="http://www.douban.com/xmlns/" xmlns:gd="http://schemas.google.com/g/2005" xmlns:opensearch="http://a9.com/-/spec/opensearchrss/1.0/">'
         +'<db:entity name="receiver">'
-    +'<uri>http://api.douban.com/people/' + msg.people + '</uri>'
+    +'<uri>http://api.douban.com/people/' + msg.uid + '</uri>'
         +'</db:entity>'
     +'<content>' + msg.content + '</content>'
     +'<title>' + (msg.title || '通过豆聊发送的消息') + '</title>'

@@ -1,4 +1,3 @@
-#dchat {border: 1px solid #A6D098; width: 225px; position: fixed; right: 0; bottom: 0; font-size: 12px; background-color: #fff;}
 #dchat * {
     position: static;
     top: auto;
@@ -47,18 +46,23 @@
     visibility: visible;
 }
 
-#dchat header {background-color: #E9F4E9; color: #0C7823; border-bottom: 1px solid #A6D098; padding: 7px 6px;}
-#dchat h1 {font-size: 1em;}
-#dchat header div{position: absolute; right: 6px; top: 7px;}
-#dchat header img{width: 10px; height: 10px; margin-left: 10px; cursor: pointer;}
-#dchat header h1 img{width: 10px; height: 10px; margin-right: 5px; margin-left: 0;}
+#dchat {position: fixed; right: 0; bottom: 0; font-size: 12px;}
 
-#dchat section {padding: 2%; height: 260px;}
-#dchat section>div:first-of-type {height: 78%; overflow: auto;}
-#dchat section>div:first-of-type div{margin-bottom: 2px;}
-#dchat section strong {font-weight: bold;}
-#dchat section div p {color: #777;}
-#dchat section div.captcha img{width: 213px; height: 34px;}
+#dchat > div {border: 1px solid #A6D098; width: 300px; background-color: #E9F4E9}
 
-#dchat section>div:last-of-type {height: 20%; margin-top: 2%; padding: 1px; background-color: #A6D098;}
-#dchat section textarea{width: 100%; height: 100%; min-height: 45px; border:none; background-color: #fff;}
+#dchat header {background-color: #0C7823; color: white; border-bottom: 1px solid #A6D098; cursor: pointer;}
+#dchat h1 {font-size: 1em; padding: 5px 10px;}
+#dchat header div{position: absolute; right: 0; top: 0; padding-top: 8px}
+#dchat header canvas{width: 12px; height: 12px; margin-right: 10px; background-color: rgba(0,0,0,0)}
+
+#dchat section {padding: 5px; height: 450px;}
+#dchat section div.message {height: 90%; overflow: hidden;}
+#dchat section div.message p{width: 90%; padding: 2px 5px; float: right; margin-bottom: 10px; background-color: #A6D098; color: #333; position: relative}
+#dchat section div.message p::after {content: ''; position: absolute; bottom: -6px; right: 5px; border-width: 6px 0 0 6px; border-style: solid; border-color: #A6D098 transparent; display: block; width: 0;}
+#dchat section div.message p.me{float: left; background-color: white;}
+#dchat section div.message p.me::after {bottom: auto; top: -6px; left: 5px; border-width: 0 6px 6px 0; border-color: white transparent;}
+#dchat section div.message p time {position: relative; text-align: right; margin-top: 2px; margin-right: 5px; display: block;}
+#dchat section div.message p.captcha img{width: 213px; height: 34px;}
+
+#dchat section div.textbox {height: 9%; margin-top: 1%; padding: 1px; background-color: #A6D098;}
+#dchat section textarea{width: 100%; height: 100%; min-height: 40px; border:none; background-color: #fff;}
